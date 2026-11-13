@@ -1,0 +1,3440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AIGC 内容独立审核与评测管控台">
+  <title>文案审核 · AIGC 内容独立审核与评测管控台</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%239A7468'/%3E%3Cpath d='M16 6 8 9.5v5.2c0 4.6 3.4 7.9 8 9.3 4.6-1.4 8-4.7 8-9.3V9.5L16 6Z' fill='none' stroke='%23F7F5F0' stroke-width='1.6'/%3E%3Cpath d='m11.8 16 2.8 2.8 5.6-6' fill='none' stroke='%23F7F5F0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      /* —— 设计规范色板 —— */
+      --bg: #F5F0E6;            /* 主背景：低饱和米奶油 */
+      --card: #FAF7F0;          /* 卡片底色 */
+      --primary: #A5C8D8;       /* 主色：灰青蓝 */
+      --accent: #E8B4B8;        /* 点缀色：豆沙粉 */
+      --strong: #8C6954;        /* 强调色：棕色 */
+      --ink: #443831;           /* 文字主色 */
+      --ink-2: #776B64;         /* 次要文字 */
+      --line: #E2D9CF;          /* 细浅描边 */
+      --line-soft: #EBE4DA;     /* 更浅描边 */
+      --paper: rgba(140, 105, 84, 0.018); /* 纸张噪点基底 */
+    }
+    html { background: #F5F0E6; }
+    body {
+      font-family: "Inter", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      background-color: var(--bg);
+      /* 静态：极淡装饰色块（不漂浮、不随鼠标移动）+ 极低对比度纸张噪点 */
+      background-image:
+        radial-gradient(ellipse 38% 30% at 8% 6%, rgba(165, 200, 216, 0.16), transparent 70%),
+        radial-gradient(ellipse 32% 28% at 94% 18%, rgba(232, 180, 184, 0.12), transparent 70%),
+        radial-gradient(ellipse 40% 32% at 50% 100%, rgba(165, 200, 216, 0.10), transparent 70%),
+        radial-gradient(ellipse 30% 26% at 30% 88%, rgba(140, 105, 84, 0.08), transparent 72%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
+      background-attachment: fixed;
+    }
+
+    /* —— 三栏卡片：米白底 + 细浅描边 + 纸张肌理 + 静态柔和阴影 —— */
+    .glass-card {
+      background-color: var(--card);
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.016'/%3E%3C/svg%3E");
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 12px 30px rgba(68, 56, 49, 0.07), 0 1px 3px rgba(68, 56, 49, 0.03);
+      transition: transform .2s ease-out, box-shadow .2s ease-out;
+    }
+    .glass-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 40px rgba(68, 56, 49, 0.10), 0 2px 6px rgba(68, 56, 49, 0.04);
+    }
+
+    /* —— 全局按钮微交互：轻量稳定，不做旋转/弹跳 —— */
+    button, .tab-btn, .rule-pill, .eval-filter, .nav-paper-btn {
+      transition: transform .2s ease-out, box-shadow .2s ease-out, background-color .2s ease-out, color .2s ease-out, border-color .2s ease-out, opacity .2s ease-out;
+    }
+    button:not(.begin-btn):active {
+      transform: scale(0.97);
+    }
+
+    /* —— 扣分项卡片悬浮上浮 —— */
+    .risk-item {
+      transition: transform .2s ease-out, box-shadow .2s ease-out, opacity .2s ease-out;
+      border-radius: 12px;
+    }
+    .risk-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 24px rgba(68, 56, 49, 0.07);
+    }
+
+    /* —— 印章盖章动画：短缩放回弹（scale 1.6→1 + 透明度渐变），只播放一次 —— */
+    @keyframes stamp-in {
+      0%   { transform: translateY(0) rotate(12deg) scale(1.6); opacity: 0; }
+      55%  { transform: translateY(0) rotate(12deg) scale(0.94); opacity: .95; }
+      75%  { transform: translateY(0) rotate(12deg) scale(1.04); opacity: 1; }
+      100% { transform: translateY(0) rotate(12deg) scale(1); opacity: .8; }
+    }
+    #stamp.stamp-anim { animation: stamp-in .4s cubic-bezier(.3, .7, .4, 1) both; }
+
+    /* —— 光标跟随柔光：已按设计规范关闭（避免视觉疲劳），保留节点但不可见 —— */
+    .cursor-glow {
+      display: none !important;
+    }
+
+    /* —— 打字机光标 —— */
+    .type-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      margin-left: 2px;
+      vertical-align: -0.1em;
+      background: #6B574A;
+      animation: blink 0.9s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .font-mono { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, monospace; }
+    ::selection { background: #E9D9D1; color: #4A4036; }
+    textarea { resize: vertical; }
+
+    /* —— 角标 —— */
+    .ref-mark {
+      display: inline-block;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      vertical-align: super;
+      line-height: 1;
+      cursor: pointer;
+      padding: 1px 4px;
+      border-radius: 4px;
+      margin-left: 2px;
+      position: relative;
+      user-select: none;
+    }
+    .ref-mark.solid {
+      color: #F7F5F0;
+      background: #6B574A;
+    }
+    .ref-mark.ghost {
+      color: #A09286;
+      background: rgba(107, 87, 74, .08);
+      border: 1px dashed rgba(107, 87, 74, .45);
+    }
+    .ref-mark.resolved {
+      color: #F7F5F0;
+      background: #8E9B84;
+      border: none;
+    }
+
+    /* —— 扣分项列表 —— */
+    .risk-item { transition: opacity .2s ease; }
+    .risk-item.ignored { opacity: .42; }
+    .risk-item.ignored .risk-title,
+    .risk-item.ignored .risk-desc { text-decoration: line-through; color: #A09286; }
+
+    /* —— 粉色手账便利贴：豆沙粉/淡黄，淡入上浮（不做旋转弹出）—— */
+    .sticky-note {
+      position: fixed;
+      z-index: 60;
+      width: 248px;
+      padding: 18px 16px 14px;
+      background: #FBEFF0;
+      border: 1px solid #F0CCD2;
+      outline: none;
+      box-shadow: 0 14px 32px rgba(68, 56, 49, .16);
+      border-radius: 8px;
+      font-family: "Inter", "Noto Sans SC", sans-serif;
+      opacity: 0;
+      transform: translateY(4px);
+      animation: note-in .28s ease-out forwards;
+    }
+    @keyframes note-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .sticky-note::before {
+      content: "";
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 48px;
+      height: 20px;
+      background: rgba(214, 197, 182, .6);
+      border-radius: 2px;
+    }
+    .sticky-note .note-title { font-size: 13px; font-weight: 700; color: #A8574E; margin-bottom: 9px; }
+    .sticky-note .note-tags { margin-bottom: 9px; }
+    .sticky-note .note-tag {
+      display: inline-block;
+      font-size: 10px;
+      color: #B96F66;
+      background: #FBE4E6;
+      border: 1px solid #F0C7CB;
+      border-radius: 999px;
+      padding: 1px 8px;
+      margin: 0 3px 3px 0;
+    }
+    .sticky-note .note-tag.main { background: #B96F66; color: #fff; border-color: #B96F66; }
+    .sticky-note .note-row { font-size: 11px; color: #7A5A55; line-height: 1.65; margin-bottom: 7px; }
+    .sticky-note .note-row:last-child { margin-bottom: 0; }
+    .sticky-note .note-label { color: #B96F66; font-weight: 700; }
+
+    /* —— 审计蒙版 —— */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(247, 240, 233, .74);
+      backdrop-filter: blur(3px);
+    }
+    .overlay-card {
+      width: 320px;
+      max-width: 86vw;
+      background: #FFFFFF;
+      border: 1px solid #E8E0D5;
+      border-radius: 20px;
+      padding: 28px 26px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(74, 64, 54, .12);
+    }
+    .overlay-title { font-size: 15px; font-weight: 600; color: #4A4036; margin-bottom: 4px; }
+    .overlay-sub { font-size: 11px; color: #A09286; margin-bottom: 22px; }
+    .progress-track { width: 100%; height: 6px; border-radius: 999px; background: #EEE8E1; overflow: hidden; }
+    .progress-fill { height: 100%; width: 0; border-radius: 999px; background: #B77B70; transition: width 1.4s cubic-bezier(.4,0,.2,1); }
+    .overlay-done { margin-top: 14px; font-size: 12px; color: #7E9A73; font-weight: 500; }
+
+    /* —— Diff —— */
+    .diff-add { color: #5F7D57; background: #EEF4EA; font-weight: 600; border-radius: 3px; padding: 0 2px; }
+    .diff-del { color: #A8574E; background: #FBEFF0; text-decoration: line-through; border-radius: 3px; padding: 0 2px; }
+
+    /* —— 规则胶囊 —— */
+    .rule-pill { transition: all .18s ease; }
+    .rule-pill input { position: absolute; opacity: 0; pointer-events: none; }
+    .rule-pill.is-on { background: #F5EAE5; border-color: #DDC8BC; color: #886255; }
+    .rule-pill.is-off { background: #FAF8F5; border-color: #E8E0D5; color: #B4A99F; }
+
+    /* —— 审计按钮小票风 —— */
+    .receipt-btn { transition: background-color .25s ease; }
+    .receipt-btn:hover { background: #F5EAE5; }
+
+    /* —— toast：复古便签，淡入上浮（不做旋转）—— */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      z-index: 70;
+      background: #F6EBD9;
+      color: #5B483D;
+      font-size: 12px;
+      padding: 11px 20px;
+      border: 1px solid #E6DCC8;
+      border-radius: 6px;
+      box-shadow: 0 10px 26px rgba(68, 56, 49, .16), 0 1px 2px rgba(68, 56, 49, .05);
+      opacity: 0;
+      transition: opacity .25s ease-out, transform .25s ease-out;
+      pointer-events: none;
+      max-width: 82vw;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        transition-delay: 0ms !important;
+      }
+      .glass-card,
+      .glass-card:hover {
+        transform: none !important;
+      }
+    }
+
+    /* =====================================================================
+       入场动画：三栏卡片依次从上到下淡入上浮（错开 0.12s，只播放一次）
+       ===================================================================== */
+    @keyframes card-enter {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    #main-app main > * {
+      animation: card-enter .5s ease-out both;
+    }
+    #main-app main > *:nth-child(1) { animation-delay: 0s; }
+    #main-app main > *:nth-child(2) { animation-delay: .12s; }
+    #main-app main > *:nth-child(3) { animation-delay: .24s; }
+    @media (prefers-reduced-motion: reduce) {
+      #main-app main > * { animation: none !important; opacity: 1 !important; transform: none !important; }
+    }
+
+    /* =====================================================================
+       滚动渐显：下方条目卡片进入视口时淡入上浮一次（不循环）
+       ===================================================================== */
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity .5s ease-out, transform .5s ease-out;
+    }
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal-on-scroll { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+
+    /* =====================================================================
+       页面三层级结构
+       #splash-screen  开场拉链动画层  z-index: 9999
+       #nav-page       导航页          z-index: 99
+       #main-app       三栏工作台      z-index: 1
+       ===================================================================== */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      overflow: hidden;
+      background: transparent;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #nav-page {
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+      display: block;
+      overflow: hidden;
+      background: #2a201a;
+    }
+    #main-app {
+      position: relative;
+      z-index: 1;
+      display: none;
+    }
+
+    /* =====================================================================
+       开场层 —— 上下两层「裂纹」开场
+       #splash-screen 分为上半层、下半层，各铺一张 bg.png（分别对齐顶部/底部）。
+       按住 BEGIN 向右拖动时，上半层向上移、下半层向下移，中间裂开露出猫咪导航页。
+       ===================================================================== */
+    /* 上下两层（裂纹的两半，各承载一张完整背景，通过 position 对齐顶部/底部） */
+    #splash-screen .split {
+      position: absolute;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: 50%;
+      overflow: hidden;
+      pointer-events: none;
+      will-change: transform;
+      transform: translateY(0);
+    }
+    #splash-screen .split.top { top: 0; }
+    #splash-screen .split.bottom { bottom: 0; }
+    /* 每层内铺一张完整背景图：上层对齐顶部，下层对齐底部，合拢即完整 bg.png */
+    #splash-screen .split .split-bg {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 200%;
+      background-image: url('bg.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    #splash-screen .split.top .split-bg { top: 0; }
+    #splash-screen .split.bottom .split-bg { bottom: 0; }
+
+    /* 拉链头（BEGIN 按钮）：居中在棕色横向长条正中间 */
+    #splash-screen .zip-pull {
+      position: absolute;
+      left: 50%;
+      top: 65%;
+      transform: translateX(-50%);
+      z-index: 30;
+      cursor: grab;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      will-change: left;
+    }
+    #splash-screen .zip-pull.dragging { cursor: grabbing; }
+
+    /* BEGIN 按钮：棕色长条上的蓝色贴纸 */
+    .begin-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 60px;
+      background: linear-gradient(180deg, #6b4a2f, #4a2f1c);
+      border-radius: 10px;
+      box-shadow: 0 8px 22px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12);
+      font-family: "IBM Plex Mono", monospace;
+      letter-spacing: .32em;
+      border: none;
+    }
+    .begin-btn::before,
+    .begin-btn::after {
+      content: "";
+      position: absolute;
+      top: 9px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.25);
+    }
+    .begin-btn::before { left: 12px; }
+    .begin-btn::after  { right: 12px; }
+    .begin-btn .begin-sticker {
+      display: inline-block;
+      padding: 7px 22px;
+      background: #3b6fd4;
+      background: linear-gradient(180deg, #4a7fe0, #2f5cb8);
+      color: #fff;
+      border-radius: 8px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-indent: .18em;
+      box-shadow: 0 3px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.25);
+      transform: rotate(-2deg);
+      transition: transform .15s ease;
+    }
+    .begin-btn:hover .begin-sticker { transform: rotate(1deg) scale(1.04); }
+
+    /* BEGIN 按钮下方操作提示小字（棕色系，与手账风格统一，不遮挡铃铛与标题） */
+    .zip-hint {
+      display: block;
+      margin-top: 12px;
+      text-align: center;
+      font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+      font-size: 12px;
+      letter-spacing: .2em;
+      text-indent: .2em;
+      color: #8C6954;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, .7);
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* 波纹文字：正中央「营销文案处理岛」，粗衬线 + 深咖色 + 白色贴纸边 */
+    .wave-title {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 4;
+      display: flex;
+      gap: .04em;
+      font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+      font-weight: 700;
+      font-size: clamp(40px, 7vw, 92px);
+      color: #4A2E15;
+      letter-spacing: .06em;
+      white-space: nowrap;
+      text-shadow:
+        0 0 3px #fff, 0 0 6px #fff, 0 0 10px #fff,
+        1px 1px 0 #fff, -1px 1px 0 #fff, 1px -1px 0 #fff, -1px -1px 0 #fff,
+        2px 2px 0 #fff, -2px 2px 0 #fff, 2px -2px 0 #fff, -2px -2px 0 #fff,
+        0 2px 12px rgba(255, 255, 255, .9);
+      pointer-events: none;
+    }
+    .wave-title span {
+      display: inline-block;
+      animation: wave-bob 1.6s ease-in-out infinite;
+    }
+    @keyframes wave-bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-18px); }
+    }
+
+    /* 完成态：上下两层分别向上/向下完全裂开，露出导航页 */
+    #splash-screen.finish .split.top {
+      animation: split-out-top .55s cubic-bezier(.7, 0, .3, 1) forwards;
+    }
+    #splash-screen.finish .split.bottom {
+      animation: split-out-bottom .55s cubic-bezier(.7, 0, .3, 1) forwards;
+    }
+    #splash-screen.finish .zip-pull,
+    #splash-screen.finish .wave-title {
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+    @keyframes split-out-top    { to { transform: translateY(-100%); } }
+    @keyframes split-out-bottom { to { transform: translateY(100%); } }
+    #splash-screen.hidden { display: none; }
+
+    /* =====================================================================
+       导航页
+       ===================================================================== */
+    #nav-page .nav-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      pointer-events: none;
+    }
+    #nav-page .nav-veil {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(20,15,12,.35) 0%, rgba(20,15,12,.05) 55%, rgba(20,15,12,.55) 100%);
+      pointer-events: none;
+    }
+    #nav-page .nav-title {
+      position: absolute;
+      top: 14%;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      white-space: nowrap;
+      z-index: 2;
+    }
+    #nav-page .nav-title .title-cn {
+      display: inline-block;
+      padding: 12px 34px;
+      color: #fff;
+      font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+      font-size: clamp(26px, 4.4vw, 52px);
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-indent: .18em;
+      border: 2px solid rgba(255, 255, 255, .65);
+      border-radius: 6px;
+      background: rgba(20, 15, 12, .32);
+      backdrop-filter: blur(4px);
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, .08), 0 10px 30px rgba(0, 0, 0, .35);
+      text-shadow: 0 2px 12px rgba(0, 0, 0, .55);
+    }
+    #nav-page .nav-title .title-en {
+      display: block;
+      margin-top: 14px;
+      font-family: "IBM Plex Mono", "Courier New", monospace;
+      font-size: clamp(11px, 1.6vw, 15px);
+      font-weight: 400;
+      letter-spacing: .42em;
+      text-indent: .42em;
+      color: rgba(255, 255, 255, .8);
+      text-shadow: 0 1px 6px rgba(0, 0, 0, .5);
+    }
+    #nav-page .nav-menu {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 12%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      padding: 0 24px;
+      z-index: 2;
+      perspective: 1000px;
+    }
+    #nav-page .nav-footer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 14px;
+      text-align: center;
+      font-family: "IBM Plex Mono", "Courier New", monospace;
+      font-size: 10px;
+      letter-spacing: .18em;
+      color: rgba(255, 255, 255, .42);
+      z-index: 2;
+      pointer-events: none;
+    }
+    .nav-paper-btn {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-width: 168px;
+      padding: 26px 28px;
+      background: rgba(255, 255, 255, .7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: #4a4036;
+      font-family: "Noto Sans SC", "Inter", sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, .65);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .7);
+      transform: rotate(var(--tilt, 0deg));
+      transform-style: preserve-3d;
+      transition: transform .5s cubic-bezier(.2, .7, .3, 1), box-shadow .5s ease, background .5s ease;
+      cursor: pointer;
+      will-change: transform;
+    }
+    .nav-paper-btn:hover {
+      transform: rotateY(15deg) translateY(-5px);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .8);
+      background: rgba(255, 255, 255, .84);
+    }
+    .nav-paper-btn:active { transform: rotateY(8deg) translateY(-2px); }
+    /* 内部内容上浮一层，旋转时保持清晰可读 */
+    .nav-paper-btn .nav-icon,
+    .nav-paper-btn .nav-label {
+      transform: translateZ(20px);
+      backface-visibility: hidden;
+    }
+    .nav-paper-btn .nav-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .6);
+      color: #8a6f55;
+    }
+    .nav-paper-btn .nav-icon svg { width: 24px; height: 24px; }
+    .nav-paper-btn .nav-label {
+      display: inline-block;
+      line-height: 1;
+    }
+    .nav-paper-btn::before {
+      content: "";
+      position: absolute;
+      top: -11px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      width: 66px;
+      height: 20px;
+      background: rgba(213, 196, 180, .62);
+      backdrop-filter: blur(2px);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
+      border-radius: 2px;
+    }
+
+    /* =====================================================================
+       模态框（通用）
+       ===================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(30, 24, 20, .55);
+      backdrop-filter: blur(4px);
+      animation: fade-in .25s ease;
+    }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+    /* 工作流模态框 */
+    .modal-coze {
+      width: min(920px, 94vw);
+      max-height: 88vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.4);
+      padding: 14px;
+      animation: modal-pop .3s cubic-bezier(.2,.9,.3,1.2);
+    }
+    @keyframes modal-pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* PRD 手账便签模态框 */
+    .modal-prd {
+      position: relative;
+      width: min(560px, 92vw);
+      max-height: 84vh;
+      overflow: auto;
+      background: #fbf6e9;
+      background-image:
+        linear-gradient(rgba(190, 175, 150, .18) 1px, transparent 1px);
+      background-size: 100% 30px;
+      border: 1px solid #e6dcc8;
+      border-radius: 3px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.38);
+      padding: 30px 26px 26px;
+      transform: rotate(-1.2deg);
+      animation: modal-pop .3s cubic-bezier(.2,.9,.3,1.2);
+    }
+    .modal-prd::before {
+      content: "";
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-3deg);
+      width: 96px;
+      height: 26px;
+      background: rgba(214, 197, 182, .78);
+      box-shadow: 0 1px 3px rgba(0,0,0,.15);
+      border-radius: 2px;
+    }
+    .modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255,255,255,.75);
+      color: #8a7a6c;
+      font-size: 16px;
+      cursor: pointer;
+      border: 1px solid #e4d9c8;
+      z-index: 5;
+      transition: background .15s ease;
+    }
+    .modal-close:hover { background: #fff; }
+
+    /* =====================================================================
+       主题归一覆盖层（视觉升级）：把工作台内联 Tailwind 颜色统一到新规范色板。
+       仅重映射「颜色」属性，不改任何布局 / 结构 / 交互逻辑。
+       ===================================================================== */
+    /* —— 文字主色 → #443831 —— */
+    [class~="text-[#4A4036]"],
+    [class~="text-[#5B4C42]"],
+    [class~="text-[#66574C]"],
+    [class~="text-[#756457]"],
+    [class~="text-[#6E5D52]"],
+    [class~="text-[#6E5448]"],
+    [class~="text-[#5B483D]"],
+    [class~="text-[#51453C]"],
+    [class~="text-[#67594F]"],
+    [class~="text-[#5B4E44]"],
+    [class~="text-[#4A4036]/"] { color: #443831 !important; }
+
+    /* —— 次要文字 → #776B64 —— */
+    [class~="text-[#A09286]"],
+    [class~="text-[#9A8D82]"],
+    [class~="text-[#B4A99F]"],
+    [class~="text-[#93857A]"],
+    [class~="text-[#91857A]"],
+    [class~="text-[#8C8075]"],
+    [class~="text-[#8B7F75]"],
+    [class~="text-[#9B8D82]"],
+    [class~="text-[#97897E]"],
+    [class~="text-[#978A7F]"],
+    [class~="text-[#998B80]"],
+    [class~="text-[#8D7E73]"],
+    [class~="text-[#AA9D92]"],
+    [class~="text-[#A29589]"],
+    [class~="text-[#AD9F93]"],
+    [class~="text-[#84786D]"],
+    [class~="text-[#776C63]"] { color: #776B64 !important; }
+
+    /* —— 强调棕（原 #9A7468 等 → 强调色 #8C6954）—— */
+    [class~="text-[#9A7468]"],
+    [class~="text-[#9B7568]"],
+    [class~="text-[#886255]"],
+    [class~="text-[#8A6255]"],
+    [class~="text-[#8a5a48]"],
+    [class~="text-[#8a6f55]"],
+    [class~="text-[#967263]"],
+    [class~="text-[#A17F70]"],
+    [class~="text-[#A88B7E]"],
+    [class~="text-[#A98C7E]"],
+    [class~="text-[#B08C7D]"],
+    [class~="text-[#9B8578]"],
+    [class~="text-[#A88B7E]"],
+    [class~="text-[#AA9588]"] { color: #8C6954 !important; }
+
+    /* —— 描边 → #E2D9CF —— */
+    [class~="border-[#E8E0D5]"],
+    [class~="border-[#EEE8E0]"],
+    [class~="border-[#ECE5DD]"],
+    [class~="border-[#EAE2DA]"],
+    [class~="border-[#F0EAE3]"],
+    [class~="border-[#E8E3DC]"],
+    [class~="border-[#E4D7CE]"],
+    [class~="border-[#E1D6CB]"],
+    [class~="border-[#DCD2C8]"],
+    [class~="border-[#DDD6CD]"],
+    [class~="border-[#E0D5C9]"] { border-color: #E2D9CF !important; }
+
+    /* —— 浅底（输入区/卡片内底）→ #FAF7F0 —— */
+    [class~="bg-[#FCFBF9]"],
+    [class~="bg-[#FCFAF7]"],
+    [class~="bg-[#FAF8F5]"],
+    [class~="bg-[#F3F1ED]"],
+    [class~="bg-[#F3F0EB]"],
+    [class~="bg-[#F5F1EC]"],
+    [class~="bg-[#F5EAE5]"],
+    [class~="bg-[#F8F5F1]"],
+    [class~="bg-[#F0EEEA]"],
+    [class~="bg-[#F4F0EB]"],
+    [class~="bg-[#F3F0EB]"] { background-color: #FAF7F0 !important; }
+
+    /* —— 纯白背景（卡片内子块）→ 卡片底 #FAF7F0 —— */
+    [class~="bg-white"] { background-color: #FAF7F0 !important; }
+
+    /* —— 主按钮 / 强调底 → 灰青蓝 #A5C8D8 —— */
+    [class~="bg-[#9A7468]"] { background-color: #A5C8D8 !important; }
+    [class~="bg-[#B77B70]"] { background-color: #A5C8D8 !important; }
+    [class~="bg-[#B89586]"] { background-color: #A5C8D8 !important; }
+
+    /* —— 主按钮文字 → 深棕，保证可读 —— */
+    [class~="text-white"] { color: #443831 !important; }
+
+    /* —— 主按钮 hover 轻微加深 —— */
+    [class~="hover:bg-[#89665B]"]:hover { background-color: #8FB8CB !important; }
+
+    /* —— 输入框/下拉框聚焦：边框 → 灰青蓝 + 淡蓝柔光（无高亮闪光）—— */
+    textarea:focus,
+    select:focus {
+      border-color: #A5C8D8 !important;
+      box-shadow: 0 0 0 3px rgba(165, 200, 216, 0.22) !important;
+      background-color: #FAF7F0 !important;
+    }
+    textarea:hover,
+    select:hover {
+      border-color: #C9D8DE !important;
+    }
+
+    /* —— 主按钮（提交/重写等）统一圆角 10px + 灰青蓝底 —— */
+    .receipt-btn,
+    #rewrite-btn,
+    #start-audit {
+      border-radius: 10px !important;
+    }
+    /* 三栏卡片统一圆角 14px（覆盖内联 rounded-[24px]） */
+    #main-app .glass-card {
+      border-radius: 14px !important;
+    }
+    #rewrite-btn { background-color: #A5C8D8 !important; color: #443831 !important; box-shadow: 0 8px 20px rgba(165, 200, 216, 0.35) !important; }
+    #rewrite-btn:hover { background-color: #8FB8CB !important; }
+
+    /* —— 主按钮（启动审核）灰青蓝描边 + 米白底，保持轻量 —— */
+    #start-audit {
+      border-color: #A5C8D8 !important;
+      background-color: #FAF7F0 !important;
+      color: #443831 !important;
+      box-shadow: 0 1px 2px rgba(68, 56, 49, 0.06) !important;
+    }
+    #start-audit:hover { background-color: #EAF2F6 !important; }
+
+    /* —— 次要按钮 → 棕色 —— */
+    .nav-paper-btn {
+      border-radius: 10px !important;
+      background: #FAF7F0 !important;
+      border-color: #E2D9CF !important;
+      color: #443831 !important;
+      box-shadow: 0 8px 20px rgba(68, 56, 49, 0.10) !important;
+    }
+
+    /* =====================================================================
+       复古手账装饰元素：静态摆放（不浮动、不闪烁、不遮挡功能控件）
+       ===================================================================== */
+    .deco {
+      position: fixed;
+      z-index: 0;
+      pointer-events: none;
+      opacity: .28;
+      color: #8C6954;
+    }
+    .deco-bell { top: 18px; right: 26px; }
+    .deco-dove { bottom: 20px; left: 26px; }
+
+    /* —— 标题使用温柔衬线体（正文保持清晰无衬线，确保长文案可读）—— */
+    #main-app h1,
+    #main-app h2 {
+      font-family: "Noto Serif SC", "Songti SC", "SimSun", serif !important;
+      color: #443831 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#F7F5F0] text-[#4A4036] antialiased">
+
+  <!-- =====================================================================
+       模块一：开场拉链动画层
+       ===================================================================== -->
+  <div id="splash-screen" aria-hidden="false">
+    <!-- 上下两层裂纹：各铺一张 bg.png（分别对齐顶部/底部），拖动时向上下裂开 -->
+    <div class="split top" id="split-top">
+      <div class="split-bg"></div>
+    </div>
+    <div class="split bottom" id="split-bottom">
+      <div class="split-bg"></div>
+    </div>
+
+    <!-- 波纹文字：正中央「营销文案处理岛」7 个字 -->
+    <div class="wave-title" id="wave-title">
+      <span>营</span><span>销</span><span>文</span><span>案</span><span>处</span><span>理</span><span>岛</span>
+    </div>
+
+    <!-- 拉链头 / BEGIN 按钮（初始位于屏幕中左侧） -->
+    <div class="zip-pull" id="zip-pull">
+      <button type="button" class="begin-btn" id="begin-btn">
+        <span class="begin-sticker">BEGIN</span>
+      </button>
+      <span class="zip-hint">按住向右拉开</span>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       模块二：导航页
+       ===================================================================== -->
+  <div id="nav-page" style="display:none;">
+    <img class="nav-bg" src="bg2.png" alt="">
+    <div class="nav-veil"></div>
+    <div class="nav-title">
+      <span class="title-cn">选择你的入口</span>
+      <span class="title-en">SELECT YOUR PORTAL</span>
+    </div>
+    <div class="nav-menu">
+      <button type="button" class="nav-paper-btn" style="--tilt:-2deg" data-nav="workflow">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="4" cy="12" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6 12h4M14 12h4M12 6v4M12 14v4"/></svg>
+        </span>
+        <span class="nav-label">工作流</span>
+      </button>
+      <button type="button" class="nav-paper-btn" style="--tilt:0deg" data-nav="workbench">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </span>
+        <span class="nav-label">工作台</span>
+      </button>
+      <button type="button" class="nav-paper-btn" style="--tilt:2deg" data-nav="prd">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
+        </span>
+        <span class="nav-label">PRD</span>
+      </button>
+    </div>
+    <div class="nav-footer">AI Content Audit System v1.0 &copy; 2026</div>
+  </div>
+
+  <!-- =====================================================================
+       模块三：三栏工作台
+       ===================================================================== -->
+  <div id="main-app">
+  <div class="mx-auto max-w-[1600px] px-5 py-6 sm:px-8 sm:py-8 xl:px-10 xl:py-10">
+    <!-- 返回导航按钮 -->
+    <button type="button" id="back-to-nav" class="mb-5 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#E8E0D5] bg-white px-4 py-2.5 text-sm font-medium text-[#6B574A] shadow-[0_6px_18px_rgba(74,64,54,0.05)] transition-colors hover:bg-[#F5EAE5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C6E60]/30">
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      ← 返回导航
+    </button>
+    <header class="mb-7 flex flex-col gap-5 sm:mb-9 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3.5">
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#E1D6CB] bg-white shadow-[0_8px_24px_rgba(74,64,54,0.05)]">
+          <svg class="h-5 w-5 text-[#9B7568]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3 4.5 6v5.2c0 4.6 3.2 8.2 7.5 9.8 4.3-1.6 7.5-5.2 7.5-9.8V6L12 3Z"/>
+            <path d="m8.8 12 2.1 2.1 4.5-4.6"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-baseline gap-2.5">
+            <h1 class="text-lg font-semibold tracking-[0.12em]">文案审核</h1>
+            <span class="text-[10px] font-medium uppercase tracking-[0.24em] text-[#A09286]">Cross Audit</span>
+          </div>
+          <p class="mt-1 text-xs tracking-wide text-[#8C8075]">AIGC 内容独立审核与评测管控台</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-[#8C8075]">
+        <span class="inline-flex items-center gap-2 rounded-full border border-[#E8E0D5] bg-white px-3.5 py-2">
+          <span class="h-1.5 w-1.5 rounded-full bg-[#8E9B84]"></span>
+          规则引擎就绪
+        </span>
+        <span class="hidden items-center gap-2 sm:inline-flex">
+          <svg class="h-4 w-4 text-[#A98C7E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 7v5l3 2"/>
+          </svg>
+          后置审核 · 离线评测闭环
+        </span>
+      </div>
+    </header>
+    <main class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[25fr_45fr_30fr] xl:gap-6">
+
+      <!-- ============ 第一栏：左侧控制台 ============ -->
+      <aside class="glass-card overflow-hidden rounded-[24px]" aria-labelledby="console-title">
+        <div class="border-b border-[#EEE8E0] px-6 pb-6 pt-7 sm:px-7">
+          <div class="mb-5 flex items-center justify-between">
+            <span class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#AA9588]">Control Panel</span>
+            <svg class="h-[18px] w-[18px] text-[#A88B7E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+              <path d="M4 7h10M18 7h2M4 17h2M10 17h10"/>
+              <circle cx="16" cy="7" r="2"/>
+              <circle cx="8" cy="17" r="2"/>
+            </svg>
+          </div>
+          <h2 id="console-title" class="text-xl font-semibold tracking-tight">审核控制台</h2>
+          <p class="mt-2 text-xs leading-5 text-[#91857A]">配置审核场景与风险识别规则</p>
+        </div>
+
+        <div class="space-y-7 px-6 py-7 sm:px-7">
+          <div>
+            <label for="scene" class="mb-2.5 block text-xs font-medium text-[#76695F]">审核场景</label>
+            <div class="relative">
+              <div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
+                <svg class="h-[18px] w-[18px] text-[#A17F70]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 9h18l-1 11H4L3 9Z"/>
+                  <path d="m8 9 4-6 4 6M9 13v3M15 13v3"/>
+                </svg>
+              </div>
+              <select id="scene" class="w-full cursor-pointer appearance-none rounded-xl border border-[#E8E0D5] bg-[#FCFBF9] py-3.5 pl-11 pr-10 text-sm font-medium outline-none transition-colors hover:border-[#D5C4B7] focus:border-[#B79788] focus:ring-2 focus:ring-[#D9C5BA]/30">
+                <option value="ecommerce" selected>电商风控</option>
+                <option value="xiaohongshu">小红书风控</option>
+              </select>
+              <svg class="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9B8D82]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m7 10 5 5 5-5"/>
+              </svg>
+            </div>
+            <p class="mt-2 text-[10px] leading-4 text-[#AD9F93]">场景仅作展示，不影响词库与判定逻辑</p>
+          </div>
+
+          <!-- 产品资质文档（折叠面板） -->
+          <div class="rounded-2xl border border-[#E8E3DC] bg-[#F3F1ED]">
+            <button type="button" id="credential-toggle" class="flex w-full cursor-pointer items-center justify-between gap-3 p-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/30" aria-expanded="false" aria-controls="credential-panel">
+              <div class="flex items-center gap-2 text-xs font-medium text-[#776C63]">
+                <svg class="h-4 w-4 text-[#9A8C80]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
+                  <path d="M14 2v6h6M8 13h8M8 17h5"/>
+                </svg>
+                <span>产品资质文档</span>
+                <span class="rounded-full border border-[#DDD6CD] px-2 py-0.5 text-[10px] text-[#978A7F]">只读</span>
+              </div>
+              <svg id="credential-chevron" class="h-4 w-4 shrink-0 text-[#9A8C80] transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+
+            <div id="credential-panel" class="hidden border-t border-[#E8E3DC] px-4 pb-4 pt-4">
+              <p id="credential-text" class="sr-only">玻尿酸保湿修护精华液，普通化妆品，备案号粤G妆网备字2024123456，含高稳定透明质酸复合保湿组合物，可提升肌肤锁水能力、减少水分流失。经第三方检测：保湿、补水、滋润、改善干燥、舒缓干痒、提升肌肤水润度、质地清爽易吸收。连续使用28天肌肤含水量提升22%。2024年度保湿配方创新奖。</p>
+
+              <div class="space-y-4 text-xs leading-6 text-[#84786D]">
+                <!-- 基础备案信息 -->
+                <div>
+                  <p class="mb-1.5 flex items-center gap-1.5 font-semibold text-[#66574C]">
+                    <span class="h-3.5 w-1 rounded-full bg-[#B89586]"></span>基础备案信息
+                  </p>
+                  <ul class="space-y-0.5">
+                    <li>产品名称：玻尿酸保湿修护精华液</li>
+                    <li>备案号：粤G妆网备字2024123456</li>
+                    <li>产品类别：普通化妆品</li>
+                    <li class="text-[#A07367]">⚠️ 重要限制：不属于祛斑美白类特证化妆品、不属于医疗器械、不是药品，无医用治疗资质</li>
+                  </ul>
+                </div>
+
+                <!-- 授权专利信息 -->
+                <div>
+                  <p class="mb-1.5 flex items-center gap-1.5 font-semibold text-[#66574C]">
+                    <span class="h-3.5 w-1 rounded-full bg-[#B89586]"></span>授权专利信息
+                  </p>
+                  <ul class="space-y-0.5">
+                    <li>专利号：ZL202310876543.2</li>
+                    <li>专利名称：一种高稳定透明质酸复合保湿组合物</li>
+                    <li>专利限定作用：仅提升肌肤锁水能力、减少水分流失；不具备抗炎、修复病症、褪红功效</li>
+                  </ul>
+                </div>
+
+                <!-- 第三方检测报告 -->
+                <div>
+                  <p class="mb-1.5 flex items-center gap-1.5 font-semibold text-[#66574C]">
+                    <span class="h-3.5 w-1 rounded-full bg-[#B89586]"></span>第三方检测报告（可对外宣称）
+                  </p>
+                  <ul class="space-y-0.5">
+                    <li>检测机构：XX化妆品检测研究院</li>
+                    <li class="text-[#7E9A73]">✅ 允许宣传：保湿、补水、滋润、改善干燥、舒缓干痒、提升肌肤水润度、质地清爽易吸收</li>
+                    <li class="text-[#7E9A73]">✅ 可引用数据：连续使用28天，肌肤含水量提升22%（仅该条数据有检测支撑）</li>
+                  </ul>
+                </div>
+
+                <!-- 无资质禁止宣称 -->
+                <div>
+                  <p class="mb-1.5 flex items-center gap-1.5 font-semibold text-[#66574C]">
+                    <span class="h-3.5 w-1 rounded-full bg-[#B89586]"></span>无资质、禁止宣称内容（出现即判定事实幻觉）
+                  </p>
+                  <ul class="space-y-0.5 text-[#AA665F]">
+                    <li>❌ 功效类：祛斑、美白、淡斑、抗炎、治疗泛红、抗过敏、根治敏感肌、修复激素脸、消除皮炎、祛痘杀菌</li>
+                    <li>❌ 数据类：7天褪红、90%用户修复敏感、3天根治痘痘、淡纹率95%</li>
+                    <li>❌ 背书类：皮肤科医生推荐、医院同款、临床验证、医用级、药妆、医美专用</li>
+                    <li>❌ 奖项类：国际美妆金奖、年度功效大奖、国家专利美白技术</li>
+                  </ul>
+                </div>
+
+                <!-- 品牌&荣誉资质 -->
+                <div>
+                  <p class="mb-1.5 flex items-center gap-1.5 font-semibold text-[#66574C]">
+                    <span class="h-3.5 w-1 rounded-full bg-[#B89586]"></span>品牌&amp;荣誉资质
+                  </p>
+                  <ul class="space-y-0.5">
+                    <li class="text-[#7E9A73]">✅ 有效荣誉：2024年度保湿配方创新奖（仅保湿赛道奖项）</li>
+                    <li class="text-[#AA665F]">❌ 未获得：美白类奖项、功效治疗类大奖、权威医学认证</li>
+                  </ul>
+                </div>
+
+                <!-- 合规边界说明 -->
+                <div>
+                  <p class="mb-1.5 flex items-center gap-1.5 font-semibold text-[#66574C]">
+                    <span class="h-3.5 w-1 rounded-full bg-[#B89586]"></span>合规边界说明
+                  </p>
+                  <ol class="list-decimal space-y-0.5 pl-4">
+                    <li>主观感受描述（"我觉得很舒服、上脸温和"），不属于事实幻觉；</li>
+                    <li>超出上面清单的功效、数据、奖项、医学背书，没有对应资质支撑，判定【事实幻觉】；</li>
+                    <li>本资质只适用于当前这款精华，不同产品资质独立，后续迭代可做多资质切换。</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="mb-2.5 flex items-center justify-between">
+              <label for="audit-copy" class="text-xs font-medium text-[#76695F]">文案输入区</label>
+              <span class="text-[10px] tracking-wide text-[#AA9D92]">内容输入</span>
+            </div>
+            <textarea id="audit-copy" rows="8" class="w-full rounded-2xl border border-[#E8E0D5] bg-[#FCFBF9] p-4 text-sm leading-7 text-[#5B4E44] outline-none transition-colors placeholder:text-[#B4A99F] hover:border-[#D5C4B7] focus:border-[#B79788] focus:bg-white focus:ring-2 focus:ring-[#D9C5BA]/30">这款神仙水绝对是全网最低价！连用三天彻底消除痘痘。想要变美的姐妹赶紧加我微信xxx，百分之百包退！</textarea>
+          </div>
+
+          <fieldset>
+            <legend class="mb-3 text-xs font-medium text-[#76695F]">交叉审核规则</legend>
+            <div id="rule-group" class="grid grid-cols-2 gap-2.5">
+              <label class="rule-pill is-on flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2.5 py-2 text-xs font-medium">
+                <input type="checkbox" data-rule="limit" checked>
+                <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+                广告法极限词
+              </label>
+              <label class="rule-pill is-on flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2.5 py-2 text-xs font-medium">
+                <input type="checkbox" data-rule="medical" checked>
+                <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+                医疗功效承诺
+              </label>
+              <label class="rule-pill is-on flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2.5 py-2 text-xs font-medium">
+                <input type="checkbox" data-rule="drain" checked>
+                <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+                站外引流
+              </label>
+              <label class="rule-pill is-on flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-2.5 py-2 text-xs font-medium">
+                <input type="checkbox" data-rule="hallucination" checked>
+                <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+                事实幻觉
+              </label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="border-t border-dashed border-[#DCD2C8] px-6 pb-7 pt-6 sm:px-7">
+          <button id="start-audit" type="button" class="receipt-btn group flex w-full cursor-pointer items-center justify-between rounded-xl border border-[#6B574A] bg-white px-5 py-4 text-sm font-semibold text-[#5B483D] shadow-[3px_3px_0_#E8E0D5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C6E60]/30">
+            <span class="inline-flex items-center gap-2.5">
+              <svg class="h-[18px] w-[18px] text-[#967263]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 7V4h4M17 4h4v3M21 17v3h-4M7 20H3v-3"/>
+                <path d="M7 12h10M9 8h6M9 16h6"/>
+              </svg>
+              启动交叉审核
+            </span>
+            <svg class="h-4 w-4 text-[#9B8578]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
+          </button>
+          <p id="rule-count" class="mt-3 text-center text-[10px] tracking-wide text-[#A29589]">已启用 4 项风险识别规则</p>
+        </div>
+      </aside>
+
+      <!-- ============ 第二栏：中间正文预览区 ============ -->
+      <section class="glass-card rounded-[24px] p-6 sm:p-8" aria-labelledby="preview-title">
+        <div class="mb-7 flex items-end justify-between gap-4">
+          <div>
+            <div class="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#AA9588]">
+              <span class="h-px w-5 bg-[#C9B3A7]"></span>
+              Content Preview
+            </div>
+            <h2 id="preview-title" class="text-xl font-semibold tracking-tight">审核正文预览</h2>
+            <p class="mt-2 text-xs leading-5 text-[#91857A]">待审原文留痕，风险位置审核后浮现角标</p>
+          </div>
+          <span id="preview-mode" class="hidden shrink-0 items-center gap-1.5 rounded-full bg-[#F5F1EC] px-3 py-1.5 text-[10px] text-[#8D7E73] sm:inline-flex">
+            <span class="h-1.5 w-1.5 rounded-full bg-[#B89586]"></span>
+            待审核
+          </span>
+        </div>
+
+        <div id="view-toggle" class="mb-5 hidden items-center gap-1 rounded-full border border-[#ECE5DD] bg-[#F3F0EB] p-1 sm:w-fit">
+          <button type="button" data-view="diff" class="view-btn cursor-pointer rounded-full bg-white px-4 py-2 text-xs font-semibold text-[#6E5448] shadow-[0_3px_10px_rgba(74,64,54,0.07)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40">查看 Diff 对比</button>
+          <button type="button" data-view="plain" class="view-btn cursor-pointer rounded-full px-4 py-2 text-xs font-medium text-[#9A8D82] transition-colors hover:text-[#6E5D52] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40">查看纯文本</button>
+        </div>
+
+        <article class="relative overflow-hidden rounded-[20px] border border-[#E8E0D5] bg-white">
+          <div class="flex items-center justify-between border-b border-[#EEE8E0] px-5 py-4 sm:px-7">
+            <div class="flex items-center gap-3">
+              <div class="flex h-9 w-9 items-center justify-center rounded-full border border-[#E4D7CE] bg-[#F5EAE5] text-[#9B7568]">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 7h-9M14 17H4M17 3l4 4-4 4M7 13l-4 4 4 4"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-[#66574C]">种草推广文案</p>
+                <p class="mt-1 text-[10px] text-[#A09286]">营销内容 · 待审原稿</p>
+              </div>
+            </div>
+            <span id="preview-count" class="rounded-full border border-[#E8E0D5] px-2.5 py-1 text-[10px] text-[#9B8D82]">未审核</span>
+          </div>
+
+          <div class="relative px-6 py-9 sm:px-10 sm:py-12">
+            <svg class="absolute right-7 top-7 h-14 w-14 text-[#F4ECE7]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M9.7 5.4C6.1 7 4 10 4 13.9 4 16.8 5.7 19 8.1 19c2.1 0 3.7-1.5 3.7-3.6 0-2-1.4-3.4-3.3-3.4-.4 0-.8.1-1 .1.3-2 1.7-3.7 3.8-4.8l-1.6-1.9Zm9 0C15.1 7 13 10 13 13.9c0 2.9 1.7 5.1 4.1 5.1 2.1 0 3.7-1.5 3.7-3.6 0-2-1.4-3.4-3.3-3.4-.4 0-.8.1-1 .1.3-2 1.7-3.7 3.8-4.8l-1.6-1.9Z"/>
+            </svg>
+            <p id="preview-text" class="relative text-[16px] font-normal leading-[2.2] tracking-[0.025em] text-[#51453C] sm:text-[17px]">这款神仙水绝对是全网最低价！连用三天彻底消除痘痘。想要变美的姐妹赶紧加我微信xxx，百分之百包退！</p>
+            <div class="mt-10 flex items-center gap-3 border-t border-[#F0EAE3] pt-5">
+              <svg class="h-4 w-4 shrink-0 text-[#B08C7D]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 11v5M12 8h.01"/>
+              </svg>
+              <p class="text-[11px] leading-5 text-[#998B80]">实心角标为主扣分风险，虚线角标为已关闭规则提示，悬停查看详情</p>
+            </div>
+          </div>
+
+          <footer class="flex items-center justify-between border-t border-[#EEE8E0] bg-[#FCFAF7] px-5 py-4 text-[10px] text-[#A09286] sm:px-7">
+            <span class="inline-flex items-center gap-2">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+              原始文本仅作审核展示
+            </span>
+            <span>第 1 页，共 1 页</span>
+          </footer>
+        </article>
+
+        <div class="mt-6 grid grid-cols-3 overflow-hidden rounded-2xl border border-[#EEE8E0] bg-[#FCFAF7] py-4">
+          <div class="flex flex-col items-center gap-1.5 border-r border-[#EAE2DA] px-2">
+            <span id="stat-hits" class="text-sm font-semibold text-[#756457]"></span>
+            <span class="text-[10px] text-[#A09286]">命中风险段</span>
+          </div>
+          <div class="flex flex-col items-center gap-1.5 border-r border-[#EAE2DA] px-2">
+            <span id="stat-types" class="text-sm font-semibold text-[#756457]"></span>
+            <span class="text-[10px] text-[#A09286]">命中风险类</span>
+          </div>
+          <div class="flex flex-col items-center gap-1.5 px-2">
+            <span id="stat-mode" class="text-sm font-semibold text-[#756457]">原文</span>
+            <span class="text-[10px] text-[#A09286]">当前展示版本</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 第三栏：右侧结果面板 ============ -->
+      <aside class="glass-card rounded-[24px] p-6 sm:p-7" aria-labelledby="report-title">
+        <div class="grid grid-cols-3 gap-1 rounded-full border border-[#ECE5DD] bg-[#F3F0EB] p-1" role="tablist" aria-label="审核结果视图">
+          <button type="button" role="tab" data-tab="report" aria-selected="true" class="tab-btn cursor-pointer rounded-full bg-white px-2 py-2.5 text-xs font-semibold text-[#6E5448] shadow-[0_3px_10px_rgba(74,64,54,0.07)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40">审核报告</button>
+          <button type="button" role="tab" data-tab="review" aria-selected="false" class="tab-btn cursor-pointer rounded-full px-2 py-2.5 text-xs font-medium text-[#9A8D82] transition-colors hover:text-[#6E5D52] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40">人工终审</button>
+          <button type="button" role="tab" data-tab="assets" aria-selected="false" class="tab-btn cursor-pointer rounded-full px-2 py-2.5 text-xs font-medium text-[#9A8D82] transition-colors hover:text-[#6E5D52] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40">评测资产</button>
+        </div>
+
+        <!-- Tab 1：审核报告 -->
+        <div id="panel-report" role="tabpanel" aria-label="审核报告" class="tab-panel">
+          <section class="relative border-b border-[#EEE8E0] px-1 pb-7 pt-8 text-center" aria-label="综合评级">
+            <div id="stamp" class="absolute right-0 top-7 rotate-12 select-none rounded-md border-2 px-3.5 py-1.5 font-mono text-lg font-semibold tracking-[0.16em] opacity-80"></div>
+            <div id="risk-badge" class="inline-flex -translate-x-5 items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-medium xl:-translate-x-3"></div>
+            <h2 id="report-title" class="mt-6 text-xs font-medium tracking-[0.08em] text-[#91857A]">综合合规得分</h2>
+            <div class="mt-2 flex items-end justify-center text-[#4A4036]">
+              <strong id="score" class="font-mono text-[40px] font-semibold leading-none tracking-tight text-[#B4A99F]">待审核</strong>
+              <span id="score-unit" class="mb-1 ml-3 hidden font-mono text-lg font-medium text-[#9A8C81]">分</span>
+            </div>
+            <p id="score-note" class="mt-4 text-xs text-[#A07367]">尚未审核，点击「启动交叉审核」开始</p>
+            <div class="mx-auto mt-6 h-1.5 w-full max-w-[250px] overflow-hidden rounded-full bg-[#EEE8E1]">
+              <div id="score-bar" class="h-full rounded-full bg-[#B77B70]" style="width:0%"></div>
+            </div>
+            <div class="mx-auto mt-2 flex w-full max-w-[250px] justify-between text-[9px] tracking-wide text-[#AD9F93]">
+              <span>0</span>
+              <span>发布线 85</span>
+              <span>100</span>
+            </div>
+            <div id="version-records" class="mt-5 hidden space-y-1.5 border-t border-[#F0EAE3] pt-4 text-left"></div>
+          </section>
+
+          <section class="pt-6" aria-label="风险扣分项">
+            <div class="mb-2 flex items-center justify-between px-1">
+              <h3 id="risk-title" class="text-sm font-semibold">风险扣分项</h3>
+              <span id="risk-total" class="rounded-full bg-[#F4F0EB] px-2.5 py-1 text-[10px] text-[#93857A]">待审核</span>
+            </div>
+            <ul id="risk-list" class="divide-y divide-[#EEE8E0]">
+              <li class="py-6 text-center text-xs text-[#B4A99F]">点击「启动交叉审核」后展示扣分项</li>
+            </ul>
+          </section>
+
+          <div class="border-t border-[#EEE8E0] pt-6">
+            <label class="mb-4 flex cursor-pointer items-center gap-2.5 rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-4 py-3 transition-colors hover:bg-[#F8F5F1]">
+              <input id="rewrite-all" type="checkbox" class="peer sr-only">
+              <span class="flex h-4 w-4 items-center justify-center rounded border border-[#D5C4B7] bg-white text-transparent transition-colors peer-checked:border-[#9A7468] peer-checked:bg-[#9A7468] peer-checked:text-white">
+                <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+              </span>
+              <span class="text-xs font-medium text-[#6E5D52]">连已豁免的风险也一起重写</span>
+            </label>
+            <button id="rewrite-btn" type="button" class="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl bg-[#9A7468] px-5 py-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(154,116,104,0.18)] transition-colors hover:bg-[#89665B] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#9A7468]/35 focus-visible:ring-offset-2">
+              <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3ZM19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14ZM5 13l.9 2.1L8 16l-2.1.9L5 19l-.9-2.1L2 16l2.1-.9L5 13Z"/>
+              </svg>
+              一键合规重写
+            </button>
+            <p class="mt-3 text-center text-[10px] leading-5 text-[#A09286]">保留核心卖点，自动规避已识别风险</p>
+          </div>
+        </div>
+
+        <!-- Tab 2：人工终审 -->
+        <div id="panel-review" role="tabpanel" aria-label="人工终审" class="tab-panel hidden">
+          <section class="px-1 py-8" aria-label="人工终审内容">
+            <div class="mb-6 flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#E4D7CE] bg-[#F5EAE5] text-[#9B7568]">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 21s-7-4.6-7-10a7 7 0 0 1 14 0c0 5.4-7 10-7 10Z"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-sm font-semibold text-[#5B4C42]">人工终审</h2>
+                <p class="mt-1 text-[11px] text-[#91857A]">审核员对机器判定结果进行复核确认</p>
+              </div>
+            </div>
+
+            <div class="mb-5 rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-4 py-3.5">
+              <div class="flex items-center justify-between">
+                <p class="text-xs font-semibold text-[#5B4C42]">机审结论</p>
+                <span id="review-machine" class="rounded-full bg-[#F4F0EB] px-2.5 py-1 text-[10px] text-[#93857A]">待审核</span>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label for="review-conclusion" class="mb-2 block text-xs font-medium text-[#76695F]">结论</label>
+                <div class="relative">
+                  <select id="review-conclusion" class="w-full cursor-pointer appearance-none rounded-xl border border-[#E8E0D5] bg-[#FCFBF9] py-3 pl-4 pr-10 text-sm outline-none transition-colors hover:border-[#D5C4B7] focus:border-[#B79788] focus:ring-2 focus:ring-[#D9C5BA]/30">
+                    <option value="pass">通过放行</option>
+                    <option value="reject">驳回修改</option>
+                    <option value="miss">机器漏检</option>
+                    <option value="false">机器误判</option>
+                  </select>
+                  <svg class="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9B8D82]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+                </div>
+              </div>
+              <div>
+                <label for="review-note" class="mb-2 block text-xs font-medium text-[#76695F]">审核备注</label>
+                <textarea id="review-note" rows="3" placeholder="填写审核意见…" class="w-full rounded-xl border border-[#E8E0D5] bg-[#FCFBF9] p-3.5 text-sm leading-6 outline-none transition-colors placeholder:text-[#B4A99F] hover:border-[#D5C4B7] focus:border-[#B79788] focus:bg-white focus:ring-2 focus:ring-[#D9C5BA]/30"></textarea>
+              </div>
+              <button id="review-submit" type="button" class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#6B574A] bg-white px-5 py-3.5 text-sm font-semibold text-[#5B483D] transition-colors hover:bg-[#F5EAE5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C6E60]/30">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
+                提交终审
+              </button>
+              <button id="add-badcase" type="button" class="hidden w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#9A7468] bg-[#F5EAE5] px-5 py-3.5 text-sm font-semibold text-[#8A6255] transition-colors hover:bg-[#F0E1DA] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#9A7468]/30">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                加入评测资产（BadCase）
+              </button>
+            </div>
+
+            <div class="mt-6">
+              <h3 class="mb-3 text-xs font-medium text-[#76695F]">操作日志</h3>
+              <div id="review-log" class="space-y-2.5">
+                <p class="text-[11px] text-[#B4A99F]">暂无操作记录</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Tab 3：评测资产 -->
+        <div id="panel-assets" role="tabpanel" aria-label="评测资产" class="tab-panel hidden">
+          <section class="px-1 py-8" aria-label="评测资产内容">
+            <div class="mb-6 flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#E4D7CE] bg-[#F5EAE5] text-[#9B7568]">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="3"/>
+                  <path d="M8 12h8M8 8h5M8 16h6"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-sm font-semibold text-[#5B4C42]">评测资产</h2>
+                <p class="mt-1 text-[11px] text-[#91857A]">沉淀风险语料与 bad case 记录</p>
+              </div>
+            </div>
+
+            <div class="mb-4 flex items-center gap-2">
+              <button type="button" data-filter="all" class="asset-filter cursor-pointer rounded-full bg-[#F5EAE5] px-3 py-1.5 text-[11px] font-medium text-[#886255] transition-colors hover:bg-[#F0E1DA]">全部</button>
+              <button type="button" data-filter="miss" class="asset-filter cursor-pointer rounded-full bg-[#F3F1ED] px-3 py-1.5 text-[11px] font-medium text-[#93857A] transition-colors hover:bg-[#ECE7E0]">漏检</button>
+              <button type="button" data-filter="false" class="asset-filter cursor-pointer rounded-full bg-[#F3F1ED] px-3 py-1.5 text-[11px] font-medium text-[#93857A] transition-colors hover:bg-[#ECE7E0]">误判</button>
+            </div>
+
+            <div id="badcase-list" class="space-y-3"></div>
+
+            <!-- 评测集批量校验 -->
+            <div class="mt-8 border-t border-[#EEE8E0] pt-6">
+              <div class="mb-4 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#E4D7CE] bg-[#F5EAE5] text-[#9B7568]">
+                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 12h6m-6 4h4M8 4h8a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/>
+                    <path d="m9 8 1.5 1.5L12 8"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-sm font-semibold text-[#5B4C42]">评测集批量校验</h2>
+                  <p class="mt-1 text-[11px] text-[#91857A]">复用现有识别规则，对内置样本跑批量评测</p>
+                </div>
+              </div>
+
+              <!-- 评测数据集切换 -->
+              <div class="mb-3">
+                <label for="eval-set-select" class="mb-1.5 block text-[11px] font-medium text-[#91857A]">评测数据集</label>
+                <div class="relative">
+                  <select id="eval-set-select" class="w-full cursor-pointer appearance-none rounded-xl border border-[#E0D5C9] bg-white px-4 py-3 text-sm font-medium text-[#5B4C42] transition-colors hover:border-[#CBB9A8] focus:border-[#B89586] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/30">
+                    <option value="base">基础回归集 · 10 条</option>
+                    <option value="beauty">美妆专项评测集 · 12 条</option>
+                    <option value="drain">私域引流专项评测集 · 10 条</option>
+                  </select>
+                  <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A09286]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+
+              <button id="eval-run-btn" type="button" class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#6B574A] bg-white px-5 py-3.5 text-sm font-semibold text-[#5B483D] transition-colors hover:bg-[#F5EAE5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C6E60]/30">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+                一键批量评测
+              </button>
+
+              <!-- 统计指标 -->
+              <div id="eval-stats" class="mt-5 grid grid-cols-4 gap-2">
+                <div class="rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-2 py-3 text-center">
+                  <p class="font-mono text-lg font-semibold text-[#756457]">—</p>
+                  <p class="mt-1 text-[9px] text-[#A09286]">总样本</p>
+                </div>
+                <div class="rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-2 py-3 text-center">
+                  <p class="font-mono text-lg font-semibold text-[#756457]">—</p>
+                  <p class="mt-1 text-[9px] text-[#A09286]">风险样本</p>
+                </div>
+                <div class="rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-2 py-3 text-center">
+                  <p class="font-mono text-lg font-semibold text-[#756457]">—</p>
+                  <p class="mt-1 text-[9px] text-[#A09286]">合规样本</p>
+                </div>
+                <div class="rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-2 py-3 text-center">
+                  <p class="font-mono text-lg font-semibold text-[#756457]">—</p>
+                  <p class="mt-1 text-[9px] text-[#A09286]">检出数</p>
+                </div>
+                <div class="rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-2 py-3 text-center">
+                  <p class="font-mono text-lg font-semibold text-[#756457]">—</p>
+                  <p class="mt-1 text-[9px] text-[#A09286]">漏检数</p>
+                </div>
+                <div class="rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-2 py-3 text-center">
+                  <p class="font-mono text-lg font-semibold text-[#756457]">—</p>
+                  <p class="mt-1 text-[9px] text-[#A09286]">误判数</p>
+                </div>
+                <div class="col-span-2 rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-2 py-3 text-center">
+                  <p class="font-mono text-lg font-semibold text-[#9A7468]">—</p>
+                  <p class="mt-1 text-[9px] text-[#A09286]">准确率</p>
+                </div>
+              </div>
+
+              <!-- 结果筛选 -->
+              <div id="eval-filters" class="mt-5 flex items-center gap-2">
+                <button type="button" data-eval-filter="all" class="eval-filter cursor-pointer rounded-full bg-[#F5EAE5] px-3 py-1.5 text-[11px] font-medium text-[#886255] transition-colors hover:bg-[#F0E1DA]">全部</button>
+                <button type="button" data-eval-filter="correct" class="eval-filter cursor-pointer rounded-full bg-[#F3F1ED] px-3 py-1.5 text-[11px] font-medium text-[#93857A] transition-colors hover:bg-[#ECE7E0]">正确</button>
+                <button type="button" data-eval-filter="miss" class="eval-filter cursor-pointer rounded-full bg-[#F3F1ED] px-3 py-1.5 text-[11px] font-medium text-[#93857A] transition-colors hover:bg-[#ECE7E0]">漏检</button>
+                <button type="button" data-eval-filter="false" class="eval-filter cursor-pointer rounded-full bg-[#F3F1ED] px-3 py-1.5 text-[11px] font-medium text-[#93857A] transition-colors hover:bg-[#ECE7E0]">误判</button>
+              </div>
+
+              <!-- 结果列表 -->
+              <div id="eval-list" class="mt-3 space-y-3">
+                <p class="text-[11px] text-[#B4A99F]">点击「一键批量评测」后展示结果</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="mt-8 flex flex-col items-center justify-between gap-3 border-t border-[#E8E0D5] pt-5 text-[10px] tracking-wide text-[#A09286] sm:flex-row">
+      <span>内容安全 · 交叉验证 · 风险可追溯</span>
+      <span>后置审核 · 人工终审 · bad case 沉淀</span>
+    </footer>
+  </div>
+  </div><!-- /#main-app -->
+
+  <!-- 工作流模态框 -->
+  <div id="modal-workflow" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true">
+    <div class="modal-coze">
+      <button type="button" class="modal-close" data-close="modal-workflow" aria-label="关闭">×</button>
+      <img src="coze.png" class="w-full" alt="工作流">
+    </div>
+  </div>
+
+  <!-- PRD 手账便签模态框 -->
+  <div id="modal-prd" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true">
+    <div class="modal-prd">
+      <button type="button" class="modal-close" data-close="modal-prd" aria-label="关闭">×</button>
+      <h2 class="mb-4 text-xl font-bold tracking-wide text-[#6b5a45]">AI 营销合规风控中台</h2>
+      <p class="mb-3 text-sm font-semibold text-[#8a6f55]">— 产品说明书 —</p>
+      <div class="space-y-3 text-[14px] leading-7 text-[#5b4c3e]">
+        <p><strong class="text-[#8a5a48]">核心痛点</strong><br>营销文案在广告法极限词、医疗功效承诺、站外引流、事实幻觉四类风险上极易踩线，人工审核效率低、口径不一、漏检频繁。</p>
+        <p><strong class="text-[#8a5a48]">产品解法</strong><br>以「词库匹配 + 资质文档交叉核验」双引擎，对文案做可追溯的风险定位、动态扣分、一键合规重写，并沉淀 BadCase 与评测集，形成离线评测闭环。</p>
+        <p><strong class="text-[#8a5a48]">核心能力</strong><br>① 交叉审核引擎 ② Diff 合规重写 ③ 人工终审 ④ 评测资产与批量校验。</p>
+        <p><strong class="text-[#8a5a48]">价值</strong><br>风险可追溯、口径可统一、资产可复用，让合规审核从「人盯」升级为「机审 + 人核」。</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+            /* ===================== AI 调用通用工具 ===================== */
+      // 你的 AI 通道地址（Cloudflare Worker）
+      var AI_PROXY_URL = 'https://ai-vibecoding.0305kylin.workers.dev/';
+      var AI_MODEL = 'deepseek-chat';
+
+      // 通用：向 AI 发一段话，拿回文字回复。
+      // systemPrompt = 给 AI 的角色设定；userPrompt = 具体要问的内容。
+            // 小工具：等待指定毫秒（用于控制审核流程的节奏感）
+      function sleep(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+      }
+
+      async function callAI(systemPrompt, userPrompt) {
+        var resp = await fetch(AI_PROXY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: AI_MODEL,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.2
+          })
+        });
+        var data = await resp.json();
+        if (data && data.choices && data.choices[0] && data.choices[0].message) {
+          return data.choices[0].message.content;
+        }
+        throw new Error('AI 返回格式异常：' + JSON.stringify(data));
+      }
+
+      // 通用：让 AI 返回 JSON，并安全解析成对象（AI 偶尔会多嘴，这里做容错）
+      async function callAIJson(systemPrompt, userPrompt) {
+        var text = await callAI(systemPrompt, userPrompt);
+        // 去掉 AI 可能包裹的 ```json ``` 代码块标记
+        text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        // 截取第一个 { 到最后一个 } 之间的内容，避免 AI 前后多说话
+        var start = text.indexOf('{');
+        var end = text.lastIndexOf('}');
+        if (start !== -1 && end !== -1) {
+          text = text.slice(start, end + 1);
+        }
+        return JSON.parse(text);
+      }
+
+
+      /* ===================== 数据（写死） ===================== */
+
+      // 样例文案
+      var BAD_TEXT = '这款神仙水绝对是全网最低价！连用三天彻底消除痘痘。想要变美的姐妹赶紧加我微信xxx，百分之百包退！';
+      var GOOD_TEXT = '这款精华含有玻尿酸，可帮助肌肤补水保湿，质地清爽，适合日常护肤使用。';
+
+      // 资质文档（事实核查依据）——仅收录「允许宣称/有依据」的正面内容，供 checkHallucination 检索比对；
+      // 禁止宣称、未获荣誉、医学背书等反面清单不写入此处（避免被 indexOf 误判为「有依据」），完整展示见左栏折叠面板。
+      var CREDENTIAL = '玻尿酸保湿修护精华液，普通化妆品，备案号粤G妆网备字2024123456，含高稳定透明质酸复合保湿组合物，可提升肌肤锁水能力、减少水分流失。经第三方检测：保湿、补水、滋润、改善干燥、舒缓干痒、提升肌肤水润度、质地清爽易吸收。连续使用28天肌肤含水量提升22%。2024年度保湿配方创新奖。';
+
+      // 词库（结构化：{word: 违规短语, suggest: 合规替换话术}）
+      // 普通词汇做子串匹配；组合短语（limitPhrases）必须完整命中才触发（单独「第一」不命中）。
+      var LEXICON = {
+        // 广告法极限词（子串匹配；不含单独「第一」，组合词见 limitPhrases）
+        limit: [
+          { word: '绝对', suggest: '极具' },
+          { word: '最', suggest: '较为' },
+          { word: '唯一', suggest: '少见' },
+          { word: '顶级', suggest: '优质' },
+          { word: '极品', suggest: '优质' },
+          { word: '天花板', suggest: '领先水平' },
+          { word: '封神', suggest: '广受好评' },
+          { word: '冠军', suggest: '优秀' },
+          { word: '首选', suggest: '优先考虑' },
+          { word: '独家', suggest: '特有' },
+          { word: '独家首发', suggest: '新品上市' },
+          { word: '全网爆款', suggest: '热门商品' },
+          { word: '秒杀', suggest: '限时优惠' },
+          { word: '碾压', suggest: '优于' },
+          { word: '吊打', suggest: '优于' },
+          { word: '超越同行', suggest: '表现良好' },
+          { word: '绝无仅有', suggest: '较为少见' },
+          { word: '史无前例', suggest: '较为少见' },
+          { word: '永久', suggest: '长期' },
+          { word: '万能', suggest: '多效' },
+          { word: '100%', suggest: '按平台规则执行' },
+          { word: '百分之百', suggest: '按平台规则执行' },
+          { word: '百分百', suggest: '按平台规则执行' },
+          { word: '全网最低', suggest: '高性价比' },
+          { word: '全网最低价', suggest: '高性价比' },
+          { word: '销量冠军', suggest: '销量表现良好' }
+        ],
+        // 极限组合短语（整短语才命中，单独「第一」不触发）
+        limitPhrases: [
+          { word: '销量第一', suggest: '销量领先' },
+          { word: '全网第一', suggest: '广受认可' },
+          { word: '行业第一', suggest: '行业领先' },
+          { word: '排名第一', suggest: '排名靠前' },
+          { word: '全网销量第一', suggest: '销量领先' },
+          { word: '全球首发', suggest: '新品上市' },
+          { word: '全国首家', suggest: '率先推出' }
+        ],
+        // 医疗功效承诺（子串匹配）
+        medical: [
+          { word: '治疗', suggest: '改善' },
+          { word: '治愈', suggest: '改善' },
+          { word: '根治', suggest: '改善' },
+          { word: '根除', suggest: '改善' },
+          { word: '消炎', suggest: '舒缓' },
+          { word: '杀菌', suggest: '清洁' },
+          { word: '抗菌', suggest: '清洁' },
+          { word: '抑菌', suggest: '清洁' },
+          { word: '祛疤', suggest: '淡化瑕疵' },
+          { word: '祛斑', suggest: '让肌肤更透亮' },
+          { word: '生发', suggest: '强韧发丝' },
+          { word: '防脱', suggest: '强韧发丝' },
+          { word: '抗敏', suggest: '温和亲肤' },
+          { word: '脱敏', suggest: '温和亲肤' },
+          { word: '解毒', suggest: '净化' },
+          { word: '药用', suggest: '护肤' },
+          { word: '药妆', suggest: '护肤品' },
+          { word: '医美级', suggest: '专业护理' },
+          { word: '疗程', suggest: '使用周期' },
+          { word: '痘痘', suggest: '肌肤问题' },
+          { word: '痤疮', suggest: '肌肤问题' },
+          { word: '皮炎', suggest: '肌肤问题' },
+          { word: '湿疹', suggest: '肌肤问题' },
+          { word: '过敏', suggest: '敏感' },
+          { word: '红肿痒', suggest: '肌肤不适' },
+          { word: '癣', suggest: '肌肤问题' },
+          { word: '脚气', suggest: '足部问题' },
+          { word: '疤痕', suggest: '瑕疵' },
+          { word: '速效', suggest: '快速' },
+          { word: '三天见效', suggest: '坚持使用感受改善' },
+          { word: '7天根治', suggest: '坚持使用感受改善' },
+          { word: '立竿见影', suggest: '上脸温和舒适' },
+          { word: '一次见效', suggest: '使用后感受改善' },
+          { word: '消除痘痘', suggest: '帮助改善肌肤状态' },
+          { word: '修复受损', suggest: '帮助肌肤恢复稳定状态' }
+        ],
+        // 站外引流（子串匹配）
+        drain: [
+          { word: '加我微信', suggest: '可以通过平台内私信咨询' },
+          { word: '加微信', suggest: '可以通过平台内私信咨询' },
+          { word: 'V我', suggest: '可以通过平台内私信咨询' },
+          { word: 'vx', suggest: '可以通过平台内私信咨询' },
+          { word: '私信我', suggest: '可以通过平台内私信咨询' },
+          { word: '主页有微', suggest: '可以通过平台内私信咨询' },
+          { word: '看个性签名', suggest: '可以通过平台内私信咨询' },
+          { word: '留手机号', suggest: '可以通过平台内私信咨询' },
+          { word: '加QQ', suggest: '可以通过平台内私信咨询' },
+          { word: '扫码', suggest: '可以通过平台内私信咨询' },
+          { word: '二维码', suggest: '可以通过平台内私信咨询' },
+          { word: '私下联系', suggest: '可以通过平台内私信咨询' },
+          { word: '私下交易', suggest: '可以通过平台内私信咨询' }
+        ]
+      };
+
+      // 风险类别配置
+      var CATEGORIES = {
+        limit:      { name: '广告法极限词', points: 8,  priority: 3 },
+        medical:    { name: '医疗功效承诺', points: 10, priority: 1 },
+        drain:      { name: '站外引流',     points: 7,  priority: 4 },
+        hallucination: { name: '事实幻觉',  points: 9,  priority: 2 }
+      };
+
+      // Diff 替换映射（统一 {from, to}，长词优先）
+      // 由词库的 suggest 字段动态生成（覆盖全部词库风险词），再补充整句级别的自然改写。
+      function buildRewriteMap() {
+        var map = [];
+        // 收集词库所有 {word → suggest}
+        var all = [].concat(LEXICON.limit, LEXICON.limitPhrases, LEXICON.medical, LEXICON.drain);
+        var seen = {};
+        all.forEach(function (it) {
+          if (!seen[it.word]) {
+            seen[it.word] = true;
+            map.push({ from: it.word, to: it.suggest });
+          }
+        });
+        // 补充整句级自然改写（放在最前，长词优先，避免被短词误伤）
+        // 同时补全「包退 / 无效退款 / 祛痘 / 见效」等遗漏替换；替换词均为普通肤感或平台规则话术，不再命中词库。
+        var extra = [
+          { from: '百分之百包退', to: '支持按平台规则售后退换' },
+          { from: '百分百包退', to: '支持按平台规则售后退换' },
+          { from: '无效退款', to: '支持按平台规则售后退换' },
+          { from: '包退', to: '支持按平台规则售后退换' },
+          { from: '连用三天彻底消除痘痘', to: '坚持使用可帮助肌肤呈现更平稳的状态' },
+          { from: '三天彻底消除痘痘', to: '坚持使用可帮助肌肤呈现更平稳的状态' },
+          { from: '祛痘', to: '帮助改善肌肤状态' },
+          { from: '见效', to: '感受改善' },
+          { from: '绝对是全网最低价', to: '性价比很有诚意' },
+          { from: '想要变美的姐妹赶紧加我微信', to: '有疑问可以在平台内私信咨询' },
+          { from: '赶紧加我微信xxx', to: '可以通过平台内私信咨询' },
+          { from: '加我微信xxx', to: '可以通过平台内私信咨询' }
+        ];
+        extra.forEach(function (e) { map.unshift(e); });
+        // 按长度降序（长词优先），确保「彻底消除痘痘」先于「彻底消除」「消除痘痘」等短词
+        map.sort(function (a, b) { return b.from.length - a.from.length; });
+        return map;
+      }
+      var REWRITE_MAP = buildRewriteMap();
+
+      // Bad case 库（写死）
+      var BADCASES = [
+        { id: 'BC-018', text: '这款面膜一次见效，三天彻底祛斑，效果立竿见影！', tag: '漏检', type: 'miss', reason: '医疗功效词「祛斑/立竿见影」未被检出' },
+        { id: 'BC-017', text: '全网销量冠军！绝对的第一名，错过再等一年。', tag: '漏检', type: 'miss', reason: '极限词组合「销量冠军/第一」遗漏' },
+        { id: 'BC-016', text: '本产品适合日常保湿，质地清爽不油腻。', tag: '误判', type: 'false', reason: '合规文案被误标为医疗功效承诺' },
+        { id: 'BC-015', text: '连续使用后肌肤状态改善，反馈良好。', tag: '误判', type: 'false', reason: '正常体验描述被误判为事实幻觉' }
+      ];
+
+      // 内置评测集样本（批量校验用，数据内联）
+      // expectTypes 使用类别 key：limit / medical / drain / hallucination
+      // ① 基础回归集（原有 E01-E10，通用回归验证）
+      var EVAL_SET_BASE = [
+        { id: 'E-01', text: '这款精华含有玻尿酸，可帮助肌肤补水保湿，质地清爽，适合日常护肤使用。', expectRisk: false, expectTypes: [], source: '标准样本' },
+        { id: 'E-02', text: '这是我们第一批次上新的产品，欢迎了解。', expectRisk: false, expectTypes: [], source: '标准样本' },
+        { id: 'E-03', text: '秋冬干燥时，可以搭配保湿面霜一起使用，使用感温和。', expectRisk: false, expectTypes: [], source: '标准样本' },
+        { id: 'E-04', text: '这款神仙水绝对是全网最低价，销量第一。', expectRisk: true, expectTypes: ['limit'], source: '标准样本' },
+        { id: 'E-05', text: '连用三天彻底消除痘痘，消炎杀菌见效快。', expectRisk: true, expectTypes: ['medical'], source: '标准样本' },
+        { id: 'E-06', text: '想要了解的姐妹加我微信xxx，私信我发链接。', expectRisk: true, expectTypes: ['drain'], source: '标准样本' },
+        { id: 'E-07', text: '连续使用7天淡化皱纹，90%用户好评，荣获国家专利。', expectRisk: true, expectTypes: ['hallucination'], source: '标准样本' },
+        { id: 'E-08', text: '百分百包退，秒杀同类产品，根治斑点。', expectRisk: true, expectTypes: ['limit', 'medical'], source: '标准样本' },
+        { id: 'E-09', text: '作为第一支入手的精华，我个人觉得保湿感不错。', expectRisk: false, expectTypes: [], source: '标准样本' },
+        { id: 'E-10', text: '万能配方永久有效，还能祛斑，立竿见影。', expectRisk: true, expectTypes: ['limit', 'medical'], source: '标准样本' }
+      ];
+
+      // ② 美妆专项评测集（12 条，全部围绕美妆护肤广告文案，混合极限词、医疗功效、边界误伤样本）
+      var EVAL_SET_BEAUTY = [
+        { id: 'M-01', text: '这款粉底液上脸服帖不卡粉，持妆一整天，控油效果很不错。', expectRisk: false, expectTypes: [], source: '美妆专项' },
+        { id: 'M-02', text: '新品口红绝绝子，全网第一显白，无敌好用到爆。', expectRisk: true, expectTypes: ['limit'], source: '美妆专项' },
+        { id: 'M-03', text: '坚持使用一个月，痘痘明显改善，敏感肌也能放心用。', expectRisk: true, expectTypes: ['medical'], source: '美妆专项' },
+        { id: 'M-04', text: '修护精华三天见效，烂脸救星，抗炎祛痘一次到位。', expectRisk: true, expectTypes: ['medical', 'limit'], source: '美妆专项' },
+        { id: 'M-05', text: '本产品经国家专利认证，临床实证 99% 用户淡化色斑。', expectRisk: true, expectTypes: ['hallucination'], source: '美妆专项' },
+        { id: 'M-06', text: '眼霜提拉紧致，用后即刻拥有天鹅颈般的少女肌。', expectRisk: true, expectTypes: ['hallucination', 'medical'], source: '美妆专项' },
+        { id: 'M-07', text: '这支洗面奶很温和，泡沫绵密，日常清洁完全够用。', expectRisk: false, expectTypes: [], source: '美妆专项' },
+        { id: 'M-08', text: '第一支防晒就选它，轻薄不闷痘，学生党闭眼入。', expectRisk: false, expectTypes: [], source: '美妆专项' },
+        { id: 'M-09', text: '面膜限时秒杀，全网最低价，错过今天再等一年。', expectRisk: true, expectTypes: ['limit'], source: '美妆专项' },
+        { id: 'M-10', text: '美白精华液直达肌底，7 天白一个度，见证奇迹。', expectRisk: true, expectTypes: ['hallucination', 'medical'], source: '美妆专项' },
+        { id: 'M-11', text: '本款润唇膏配方温和，无添加香精，秋冬滋润双唇。', expectRisk: false, expectTypes: [], source: '美妆专项' },
+        { id: 'M-12', text: '玻尿酸原液补水效果绝佳，用一次就能淡化细纹。', expectRisk: true, expectTypes: ['hallucination', 'medical'], source: '美妆专项' },
+        { id: 'M-13', text: '使用后痘印明显消退，坚持用能改善敏感泛红。', expectRisk: true, expectTypes: ['medical'], source: '美妆专项·漏检演示' }
+      ];
+
+      // ③ 私域引流专项评测集（10 条，围绕站外导流、私信、微信、扫码等引流话术，含正常聊天边界样本）
+      var EVAL_SET_DRAIN = [
+        { id: 'S-01', text: '喜欢这款的姐妹可以私信我，我发你详细链接哦。', expectRisk: true, expectTypes: ['drain'], source: '引流专项' },
+        { id: 'S-02', text: '想买的加我微信 xxx，备注来源有专属优惠。', expectRisk: true, expectTypes: ['drain'], source: '引流专项' },
+        { id: 'S-03', text: '扫码进群领福利，群里每天都有新品推荐。', expectRisk: true, expectTypes: ['drain'], source: '引流专项' },
+        { id: 'S-04', text: '点我主页看个性签名，那里有详细的商品介绍。', expectRisk: true, expectTypes: ['drain'], source: '引流专项' },
+        { id: 'S-05', text: '想领优惠券的扫码进群，群里每天都有新品推荐。', expectRisk: true, expectTypes: ['drain'], source: '引流专项' },
+        { id: 'S-06', text: '这个颜色真的超好看，评论区留言我回你尺码建议。', expectRisk: false, expectTypes: [], source: '引流专项' },
+        { id: 'S-07', text: '下单后记得备注暗号，客服会优先发货哦。', expectRisk: false, expectTypes: [], source: '引流专项' },
+        { id: 'S-08', text: '加我微信聊一下吧，朋友圈有更多实拍图。', expectRisk: true, expectTypes: ['drain'], source: '引流专项' },
+        { id: 'S-09', text: '有疑问直接在页面咨询客服即可，无需其他操作。', expectRisk: false, expectTypes: [], source: '引流专项' },
+        { id: 'S-10', text: '想要的姐妹私信我，我发你链接，或者加微信都行。', expectRisk: true, expectTypes: ['drain'], source: '引流专项' }
+      ];
+
+      // 数据集注册表：value → { label, set }
+      var EVAL_SETS = {
+        base: EVAL_SET_BASE,
+        beauty: EVAL_SET_BEAUTY,
+        drain: EVAL_SET_DRAIN
+      };
+      // 兼容旧引用：默认当前数据集为 base
+      var EVAL_SET = EVAL_SET_BASE;
+
+      /* ===================== DOM 引用 ===================== */
+      var sceneEl = document.getElementById('scene');
+      var credentialEl = document.getElementById('credential-text');
+      var textareaEl = document.getElementById('audit-copy');
+      var rulePills = document.querySelectorAll('.rule-pill');
+      var ruleCountEl = document.getElementById('rule-count');
+      var startBtn = document.getElementById('start-audit');
+      var previewEl = document.getElementById('preview-text');
+      var previewModeEl = document.getElementById('preview-mode');
+      var previewCountEl = document.getElementById('preview-count');
+      var statHitsEl = document.getElementById('stat-hits');
+      var statTypesEl = document.getElementById('stat-types');
+      var statModeEl = document.getElementById('stat-mode');
+      var stampEl = document.getElementById('stamp');
+      var riskBadgeEl = document.getElementById('risk-badge');
+      var scoreEl = document.getElementById('score');
+      var scoreUnitEl = document.getElementById('score-unit');
+      var scoreNoteEl = document.getElementById('score-note');
+      var scoreBarEl = document.getElementById('score-bar');
+      var riskListEl = document.getElementById('risk-list');
+      var riskTotalEl = document.getElementById('risk-total');
+      var rewriteAllEl = document.getElementById('rewrite-all');
+      var rewriteBtn = document.getElementById('rewrite-btn');
+      var reviewMachineEl = document.getElementById('review-machine');
+      var reviewConclusionEl = document.getElementById('review-conclusion');
+      var reviewNoteEl = document.getElementById('review-note');
+      var reviewSubmitEl = document.getElementById('review-submit');
+      var reviewLogEl = document.getElementById('review-log');
+      var addBadcaseBtn = document.getElementById('add-badcase');
+      var badcaseListEl = document.getElementById('badcase-list');
+      var evalRunBtn = document.getElementById('eval-run-btn');
+      var evalSetSelectEl = document.getElementById('eval-set-select');
+      var evalStatsEl = document.getElementById('eval-stats');
+      var evalListEl = document.getElementById('eval-list');
+      var viewToggleEl = document.getElementById('view-toggle');
+      var versionRecordsEl = document.getElementById('version-records');
+      var reportTitleEl = document.getElementById('report-title');
+
+      /* ===================== 状态 ===================== */
+      var enabledRules = { limit: true, medical: true, drain: true, hallucination: true };
+      var auditDone = false;       // 是否已审计
+      var diffApplied = false;     // 是否已重写（存在改写版本）
+      var viewMode = 'diff';       // 'diff' | 'plain'，重写后的预览视图模式
+      var currentText = BAD_TEXT;  // 当前正文真源（随输入框 / 重写同步）
+      var originalText = BAD_TEXT; // 重写前的原文（用于 Diff 对比）
+      var rewrittenText = '';      // 重写后的干净纯文本
+      // 审计结果：命中段数组，每段 {id, text, categories:[], main, active, ignored, points}
+      var findings = [];
+            var lastAIChanges = [];   // 最近一次 AI 改写的修改说明
+      // 版本记录
+      var versionRecords = [];
+      // 当前选中的版本索引（-1 表示最新/当前编辑态）
+      var currentVersionIndex = -1;
+      // 评测资产：可变 badcase 数组（初始为写死的示例，可追加）
+      var badcases = BADCASES.slice();
+      // 当前评测资产筛选状态（用于追加记录后按当前筛选刷新）
+      var currentBadcaseFilter = 'all';
+      // 批量评测结果（点击「一键批量评测」后填充）
+      var evalResults = [];
+      // 当前评测结果筛选状态
+      var currentEvalFilter = 'all';
+      // 当前选中的评测数据集 key（base / beauty / drain）
+      var currentEvalSetKey = 'base';
+
+      /* ===================== 工具函数 ===================== */
+
+      function escapeHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      // 判断文案中的功效/数据/背书描述是否在资质文档中有依据（事实幻觉判定）
+      // 不设固定词库：凡是命中的「功效宣称」类医疗词，若资质文档检索不到对应依据，即标记为事实幻觉。
+      // 纯名词（痘痘/痤疮/皮炎等）本身是"症状/对象"描述，不作为幻觉判定依据；
+      // 只有「动作+效果」的功效词（治疗/治愈/祛疤/生发/消除痘痘/三天见效 等）才参与幻觉判定。
+            // 【AI 版】事实幻觉判定：把资质文档 + 文案交给 AI 做语义核验
+      // 返回数组，每项 { claim: 命中的宣称, reason: 为什么算虚假宣称 }
+      async function checkHallucinationAI(text, credential) {
+        var sys = '你是一名资深的广告合规审核专家，专门审核化妆品/美妆类营销文案。' +
+          '你的任务：根据【产品资质文档】，判断【待审文案】里有没有"资质文档支撑不了的功效、数据、奖项、背书"宣称，这类宣称属于虚假宣传（事实幻觉）。' +
+          '判定原则：' +
+          '1. 只有资质文档里明确有依据的功效/数据/奖项，才算合规；' +
+          '2. 文案里出现资质文档没有依据的功效宣称（如美白、祛斑、抗炎、治疗、消除痘痘等）、无依据的数据（如90%好评、7天见效）、无依据的奖项或医学背书，都算虚假宣传；' +
+          '3. 主观感受描述（如"我觉得很舒服""上脸温和"）不算虚假宣传；' +
+          '4. 语义等价要识别：比如文案说"提亮肤色"而资质只说"保湿"，提亮无依据，算虚假宣传。' +
+          '输出要求：严格返回 JSON，格式为 {"claims":[{"claim":"文案里的原话片段","reason":"为什么算虚假宣传"}]}。' +
+          '如果没有任何虚假宣传，返回 {"claims":[]}。不要输出 JSON 以外的任何文字。';
+
+        var user = '【产品资质文档】\n' + credential + '\n\n【待审文案】\n' + text;
+
+        var result = await callAIJson(sys, user);
+        return (result && result.claims) ? result.claims : [];
+      }
+
+            // 【AI 版】合规重写：根据原文 + 命中风险 + 资质文档，生成合规且自然的新文案
+      // 返回 { rewritten: 改写后的文案, changes: [{from, to, reason}] 修改说明 }
+      async function rewriteComplianceAI(text, findingsList, credential) {
+        // 把命中的风险整理成清单，告诉 AI 哪些地方要改
+        var riskLines = findingsList.map(function (f) {
+          var catNames = f.categories.map(function (c) { return CATEGORIES[c].name; }).join('、');
+          return '- 「' + f.text + '」（风险类型：' + catNames + '）';
+        }).join('\n');
+
+        var sys = '你是一名资深的电商/美妆营销文案专家，同时精通广告合规。' +
+          '你的任务：把一段有合规风险的营销文案，改写成【合规、自然、流畅，且尽量保留原有卖点和种草语气】的新文案。' +
+          '改写原则：' +
+          '1. 删除或替换《广告法》禁止的绝对化用语（如最、第一、绝对、全网最低）；' +
+          '2. 删除或软化化妆品不能宣称的医疗功效（如治疗、消炎、祛痘、消除痘痘），改为体验化描述；' +
+          '3. 删除资质文档无依据的功效、数据、奖项、医学背书（事实幻觉）；' +
+          '4. 删除站外引流信息（如加微信、留电话），改为引导平台内咨询；' +
+          '5. 可以合法宣称的内容（资质文档里有依据的，如保湿、补水），要保留；' +
+          '6. 改写后的文案要像真人写的，通顺自然，不要生硬堆砌，不要出现新的违规词。' +
+          '输出要求：严格返回 JSON，格式为 {"rewritten":"改写后的完整文案","changes":[{"from":"原文片段","to":"改写后片段","reason":"为什么这样改"}]}。' +
+          '不要输出 JSON 以外的任何文字。';
+
+        var user = '【产品资质文档（可合法宣称的范围）】\n' + credential +
+          '\n\n【原文案】\n' + text +
+          '\n\n【需要处理的风险点】\n' + (riskLines || '（规则未命中，但仍请检查并改写任何潜在违规）');
+
+        var result = await callAIJson(sys, user);
+        return {
+          rewritten: (result && result.rewritten) ? result.rewritten : text,
+          changes: (result && result.changes) ? result.changes : []
+        };
+      }
+
+      function checkHallucination(text) {
+        var t = text === undefined ? currentText : text;
+        // 仅名词（作为语境，不参与幻觉判定）
+        var nounOnly = ['痘痘', '痤疮', '皮炎', '湿疹', '过敏', '红肿痒', '癣', '脚气', '疤痕', '疗程'];
+        var claims = [];
+        // 1) 医疗功效词命中但资质文档无依据 → 事实幻觉
+        for (var i = 0; i < LEXICON.medical.length; i++) {
+          var w = LEXICON.medical[i].word;
+          if (nounOnly.indexOf(w) !== -1) continue;
+          if (t.indexOf(w) !== -1 && CREDENTIAL.indexOf(w) === -1) {
+            claims.push(w);
+          }
+        }
+        // 2) 功效/数据/口碑/背书类特征词命中但资质文档无依据 → 事实幻觉
+        //    覆盖「淡化皱纹 / 90%好评 / 国家专利 / 专家推荐」等资质文档检索不到的描述
+        var claimFeatures = [
+          '淡化', '祛皱', '抗皱', '抗老', '紧致', '提拉', '美白', '淡斑', '去黑头', '收缩毛孔', '去皱',
+          '好评', '回购', '口碑', '专利', '认证', '专家推荐', '明星同款', '诺贝尔', '获奖',
+          '用户反馈', '实验室', '临床', '实证', '权威', '国家级', '国标'
+        ];
+        for (var j = 0; j < claimFeatures.length; j++) {
+          var fw = claimFeatures[j];
+          if (t.indexOf(fw) !== -1 && CREDENTIAL.indexOf(fw) === -1) {
+            claims.push(fw);
+          }
+        }
+        return claims;
+      }
+
+      // 在文案中定位所有命中（用于角标与扣分项）
+      // 关键：无论规则是否勾选，都检索全部词库；每条命中记录对应规则是否开启，
+      // 用于区分「实心角标（命中且规则开启，参与扣分）」与「灰色虚线角标（命中但规则关闭，不扣分）」
+      // 可选参数 text：默认用 currentText，批量评测时传入任意样本文案复用同一套识别逻辑。
+      function findFindings(text) {
+        var t = text === undefined ? currentText : text;
+        var list = [];
+        var seq = 0;
+
+        // 1) 极限词（始终检索；子串匹配）
+        for (var i = 0; i < LEXICON.limit.length; i++) {
+          var w = LEXICON.limit[i].word;
+          if (t.indexOf(w) !== -1) {
+            list.push({ word: w, cat: 'limit', enabled: enabledRules.limit });
+          }
+        }
+        // 1.5) 极限组合短语（整短语才命中，单独「第一」不触发）
+        for (var i2 = 0; i2 < LEXICON.limitPhrases.length; i2++) {
+          var wp = LEXICON.limitPhrases[i2].word;
+          if (t.indexOf(wp) !== -1) {
+            list.push({ word: wp, cat: 'limit', enabled: enabledRules.limit });
+          }
+        }
+        // 2) 医疗功效承诺（始终检索；子串匹配）
+        for (var j = 0; j < LEXICON.medical.length; j++) {
+          var mw = LEXICON.medical[j].word;
+          if (t.indexOf(mw) !== -1) {
+            list.push({ word: mw, cat: 'medical', enabled: enabledRules.medical });
+          }
+        }
+        // 3) 站外引流（始终检索；子串匹配）
+        for (var k = 0; k < LEXICON.drain.length; k++) {
+          var dw = LEXICON.drain[k].word;
+          if (t.indexOf(dw) !== -1) {
+            list.push({ word: dw, cat: 'drain', enabled: enabledRules.drain });
+          }
+        }
+        // 4) 事实幻觉（医疗词命中但资质无依据；始终检索，作为附加标签）
+        var hc = checkHallucination(t);
+        for (var h = 0; h < hc.length; h++) {
+          list.push({ word: hc[h], cat: 'hallucination', enabled: enabledRules.hallucination });
+        }
+
+        // 按出现位置排序（长词优先，便于归并时保留最长词作为主文本），再按优先级归并同段命中
+        list.sort(function (a, b) {
+          var pa = t.indexOf(a.word);
+          var pb = t.indexOf(b.word);
+          if (pa !== pb) return pa - pb;
+          return b.word.length - a.word.length;
+        });
+
+        // 归并：同一词段的多命中合成一个 finding（用于"同一段内容仅扣一次分"）
+        // 关键：若命中词被更长词覆盖，则以最长词为 f.text，避免「彻底消除痘痘」拆成多个碎片
+        var merged = [];
+        for (var m = 0; m < list.length; m++) {
+          var item = list[m];
+          var pos = t.indexOf(item.word);
+          var matched = false;
+          for (var n = 0; n < merged.length; n++) {
+            var f = merged[n];
+            // 若当前词与已归并词的区间重叠，归并标签
+            if (pos >= f.pos && pos <= f.pos + f.text.length) {
+              if (f.categories.indexOf(item.cat) === -1) f.categories.push(item.cat);
+              f.catEnabled[item.cat] = item.enabled;
+              // 若当前词更长且完全覆盖现有区间，扩展主文本
+              if (item.word.length > f.text.length && pos <= f.pos && pos + item.word.length >= f.pos + f.text.length) {
+                f.text = item.word;
+                f.pos = pos;
+              }
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) {
+            merged.push({
+              id: 'R' + (++seq),
+              text: item.word,
+              pos: pos,
+              categories: [item.cat],
+              catEnabled: {},
+              ignored: false
+            });
+            merged[merged.length - 1].catEnabled[item.cat] = item.enabled;
+          }
+        }
+
+        // 排序后计算主风险（按优先级取最高），并计算是否参与扣分
+        merged.forEach(function (f) {
+          f.categories.sort(function (a, b) {
+            return CATEGORIES[a].priority - CATEGORIES[b].priority;
+          });
+          f.main = f.categories[0];
+          f.points = CATEGORIES[f.main].points;
+          // 主风险对应规则开启 → 参与扣分；否则仅作提示（虚线角标），不扣分
+          f.active = f.catEnabled[f.main] === true;
+          if (!f.active) f.points = 0;
+        });
+
+        // 按位置排序，编号
+        merged.sort(function (a, b) { return a.pos - b.pos; });
+        merged.forEach(function (f, idx) { f.seq = idx + 1; });
+
+        return merged;
+      }
+
+      // 对任意文本运行识别规则，返回实际检出的风险标签去重数组（用于批量评测复用）
+      function analyzeText(text) {
+        var fs = findFindings(text);
+        var types = [];
+        fs.forEach(function (f) {
+          f.categories.forEach(function (c) {
+            if (types.indexOf(c) === -1) types.push(c);
+          });
+        });
+        return types; // 类别 key 数组，如 ['limit','medical','drain','hallucination']
+      }
+
+      // 读取规则勾选状态
+      function readRules() {
+        rulePills.forEach(function (pill) {
+          var input = pill.querySelector('input');
+          var key = input.getAttribute('data-rule');
+          enabledRules[key] = input.checked;
+          if (input.checked) { pill.classList.add('is-on'); pill.classList.remove('is-off'); }
+          else { pill.classList.add('is-off'); pill.classList.remove('is-on'); }
+        });
+        var count = 0;
+        for (var k in enabledRules) if (enabledRules[k]) count++;
+        ruleCountEl.textContent = '已启用 ' + count + ' 项风险识别规则';
+      }
+
+      /* ===================== 评分 / 印章 ===================== */
+      function clearReport() {
+        scoreEl.textContent = '待审核';
+        scoreEl.className = 'font-mono text-[40px] font-semibold leading-none tracking-tight text-[#B4A99F]';
+        scoreUnitEl.textContent = '分';
+        scoreUnitEl.classList.add('hidden');
+        scoreNoteEl.textContent = '尚未审核，点击「启动交叉审核」开始';
+        scoreNoteEl.className = 'mt-4 text-xs text-[#A07367]';
+        scoreBarEl.style.width = '0%';
+        stampEl.textContent = '';
+        stampEl.className = 'absolute right-0 top-7 rotate-12 select-none rounded-md border-2 px-3.5 py-1.5 font-mono text-lg font-semibold tracking-[0.16em] opacity-80';
+        riskBadgeEl.textContent = '';
+        riskBadgeEl.className = 'inline-flex -translate-x-5 items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-medium xl:-translate-x-3';
+        riskTotalEl.textContent = '待审核';
+        riskListEl.innerHTML = '<li class="py-6 text-center text-xs text-[#B4A99F]">点击「启动交叉审核」后展示扣分项</li>';
+      }
+
+      function renderScore() {
+        var deducted = 0;
+        findings.forEach(function (f) { if (!f.ignored) deducted += f.points; });
+        var score = 100 - deducted; // 分数不设下限
+
+        // 数字从 0 快速滚动到 score（增长动画）
+        animateNumber(scoreEl, score, 700, function (val) {
+          scoreEl.textContent = String(val);
+        });
+        scoreEl.className = 'font-mono text-[88px] font-semibold leading-none tracking-[-0.08em] text-[#4A4036]';
+        scoreUnitEl.textContent = '分';
+        scoreUnitEl.classList.remove('hidden');
+        var pct = Math.max(0, Math.min(100, score));
+        scoreBarEl.style.width = pct + '%';
+
+        if (score >= 85) {
+          stampEl.textContent = 'PASS 通过';
+          stampEl.className = 'absolute right-0 top-7 rotate-12 select-none rounded-md border-2 border-[#7E9A73] px-3.5 py-1.5 font-mono text-lg font-semibold tracking-[0.16em] text-[#7E9A73] opacity-80 outline outline-1 outline-offset-2 outline-[#7E9A73]/60';
+          scoreBarEl.className = 'h-full rounded-full bg-[#8E9B84]';
+          riskBadgeEl.className = 'inline-flex -translate-x-5 items-center gap-2 rounded-full bg-[#EEF4EA] px-3 py-1.5 text-[10px] font-medium text-[#7E9A73] xl:-translate-x-3';
+          riskBadgeEl.innerHTML = '<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>合规达标';
+          scoreNoteEl.textContent = '达到发布阈值，可进入人工终审';
+          scoreNoteEl.className = 'mt-4 text-xs text-[#7E9A73]';
+        } else {
+          stampEl.textContent = '不合格';
+          stampEl.className = 'absolute right-0 top-7 rotate-12 select-none rounded-md border-2 border-[#B96860] px-3.5 py-1.5 font-mono text-lg font-semibold tracking-[0.16em] text-[#B45F58] opacity-80 outline outline-1 outline-offset-2 outline-[#B96860]/60 stamp-anim';
+          scoreBarEl.className = 'h-full rounded-full bg-[#B77B70]';
+          riskBadgeEl.className = 'inline-flex -translate-x-5 items-center gap-2 rounded-full bg-[#F8EDEB] px-3 py-1.5 text-[10px] font-medium text-[#AA665F] xl:-translate-x-3';
+          riskBadgeEl.innerHTML = '<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.7 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>高风险内容';
+          scoreNoteEl.textContent = '低于发布阈值（85 分），建议驳回修改';
+          scoreNoteEl.className = 'mt-4 text-xs text-[#A07367]';
+        }
+      }
+
+      // 数字增长动画：从 0 滚动到 target，duration 毫秒内完成
+      function animateNumber(el, target, duration, onFrame) {
+        var start = null;
+        function step(ts) {
+          if (!start) start = ts;
+          var prog = Math.min(1, (ts - start) / duration);
+          // easeOutCubic 让数字先快后慢
+          var eased = 1 - Math.pow(1 - prog, 3);
+          var val = Math.round(eased * target);
+          onFrame(val);
+          if (prog < 1) requestAnimationFrame(step);
+          else onFrame(target);
+        }
+        requestAnimationFrame(step);
+      }
+
+      /* ===================== 扣分项列表 ===================== */
+      function renderRiskList() {
+        if (findings.length === 0) {
+          riskListEl.innerHTML = '<li class="py-6 text-center text-xs text-[#8E9B84]">未检出风险，文案合规</li>';
+          riskTotalEl.textContent = '共 0 项';
+          return;
+        }
+        riskTotalEl.textContent = '共 ' + findings.length + ' 项';
+        riskListEl.innerHTML = '';
+        findings.forEach(function (f) {
+          var li = document.createElement('li');
+          li.className = 'risk-item py-5';
+          li.setAttribute('data-risk', f.id);
+          if (f.ignored) li.classList.add('ignored');
+
+          var tagsHtml = f.categories.map(function (c) {
+            var main = (c === f.main);
+            var on = (f.catEnabled[c] === true);
+            if (main && !on) {
+              return '<span class="text-[#A09286]">' + CATEGORIES[c].name + '（规则未启用）</span>';
+            }
+            return '<span class="' + (main ? 'text-[#B16E64] font-medium' : 'text-[#A09286]') + '">' + CATEGORIES[c].name + '</span>';
+          }).join(' · ');
+
+          var pointText = f.active ? '−' + f.points + ' 分' : '不计分';
+
+          li.innerHTML =
+            '<div class="flex items-start justify-between gap-3">' +
+              '<div class="flex min-w-0 gap-3">' +
+                '<span class="risk-num mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F7ECE9] text-[10px] font-semibold text-[#AF6E64]">' + pad(f.seq) + '</span>' +
+                '<div class="min-w-0">' +
+                  '<div class="flex flex-wrap items-center gap-2">' +
+                    '<h4 class="risk-title text-xs font-semibold text-[#5B4C42]">' + escapeHtml(f.text) + '</h4>' +
+                    '<span class="text-[10px] font-medium ' + (f.active ? 'text-[#B16E64]' : 'text-[#A09286]') + '">' + pointText + '</span>' +
+                  '</div>' +
+                  '<p class="risk-desc mt-2 text-[11px] leading-5 text-[#97897E]">' + tagsHtml + '</p>' +
+                '</div>' +
+              '</div>' +
+              '<button type="button" class="ignore-btn shrink-0 cursor-pointer rounded-lg bg-[#F0EEEA] px-2.5 py-1.5 text-[10px] font-medium text-[#8B7F75] transition-colors hover:bg-[#E7E1DA] hover:text-[#67594F] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/30">' + (f.ignored ? '已豁免' : '忽略风险') + '</button>' +
+            '</div>';
+          riskListEl.appendChild(li);
+        });
+
+        // 绑定忽略按钮
+        riskListEl.querySelectorAll('.ignore-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var li = btn.closest('.risk-item');
+            var id = li.getAttribute('data-risk');
+            var f = findings.find(function (x) { return x.id === id; });
+            if (!f) return;
+            f.ignored = !f.ignored;
+            renderRiskList();
+            renderScore();
+            renderPreview();
+          });
+        });
+      }
+
+      function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+      /* ===================== 正文渲染 ===================== */
+      function setPreviewMode(text, dotClass) {
+        previewModeEl.innerHTML = '<span class="h-1.5 w-1.5 rounded-full ' + dotClass + '"></span>' + text;
+        previewModeEl.className = 'hidden shrink-0 items-center gap-1.5 rounded-full bg-[#F5F1EC] px-3 py-1.5 text-[10px] text-[#8D7E73] sm:inline-flex';
+      }
+
+      function renderPreview() {
+        previewEl.textContent = '';
+
+        // 状态 C：已重写且用户主动切换到 Diff / 纯文本视图时，按视图模式分流；
+        // 默认（viewMode='audited'）走下方审核结果分支，展示新文案的风险角标。
+        if (diffApplied && viewMode !== 'audited') {
+          if (viewMode === 'plain') {
+            renderPlainView();
+          } else {
+            renderDiffView();
+          }
+          return;
+        }
+
+        if (!auditDone) {
+          // 状态 A：纯文本
+          previewEl.appendChild(document.createTextNode(currentText));
+          previewCountEl.textContent = '未审核';
+          setPreviewMode('待审核', 'bg-[#B89586]');
+          return;
+        }
+
+        // 状态 B：审核完成，插入角标
+        if (findings.length === 0) {
+          previewEl.textContent = currentText;
+          previewCountEl.textContent = '合规';
+          setPreviewMode('审核完成', 'bg-[#8E9B84]');
+          return;
+        }
+
+        // —— 安全字符串替换：先对原文做 HTML 转义，再按位置反向插入 <sup> 角标 ——
+        // 关键：绝不把未转义的用户输入直接拼进 innerHTML，确保文字始终存在、不消失、不破坏 DOM。
+        var escaped = escapeHtml(currentText);
+        var marks = []; // 按「原文字符偏移」排序后，从后往前插入，保证索引不漂移
+        findings.forEach(function (f) {
+          marks.push({ pos: f.pos, end: f.pos + f.text.length, html: buildMarkHtml(f) });
+        });
+        marks.sort(function (a, b) { return a.pos - b.pos; });
+        for (var mi = marks.length - 1; mi >= 0; mi--) {
+          var mk = marks[mi];
+          var before = escaped.slice(0, mk.end);
+          var after = escaped.slice(mk.end);
+          escaped = before + mk.html + after;
+        }
+        previewEl.innerHTML = escaped;
+
+        previewCountEl.textContent = findings.length + ' 处风险';
+        setPreviewMode('审核完成', 'bg-[#8E9B84]');
+      }
+
+      // 打字机效果：逐字打印正文，打印到违规词时稍作停顿，最后补全角标
+      function typewriterPreview(onDone) {
+        var text = currentText;
+        // 无风险时直接渲染，不做打字机
+        if (findings.length === 0) {
+          renderPreview();
+          if (onDone) onDone();
+          return;
+        }
+        // 构造违规词位置表（按 pos 排序，记录每个违规词的起点）
+        var stops = [];
+        findings.forEach(function (f) {
+          stops.push({ pos: f.pos, len: f.text.length });
+        });
+        stops.sort(function (a, b) { return a.pos - b.pos; });
+        // 去重（重叠区间的违规词起点可能重复）
+        var stopSet = {};
+        var uniqStops = [];
+        stops.forEach(function (s) {
+          if (!stopSet[s.pos]) { stopSet[s.pos] = true; uniqStops.push(s); }
+        });
+
+        previewEl.textContent = '';
+        // 插入打字机光标
+        var cursor = document.createElement('span');
+        cursor.className = 'type-cursor';
+        previewEl.appendChild(cursor);
+
+        var i = 0;
+        var total = text.length;
+        var CHAR_INTERVAL = 34;   // 每字间隔（毫秒）
+        var PAUSE = 320;          // 违规词停顿
+
+        function nextStopAfter(idx) {
+          for (var k = 0; k < uniqStops.length; k++) {
+            if (uniqStops[k].pos >= idx) return uniqStops[k];
+          }
+          return null;
+        }
+
+        function type() {
+          if (i >= total) {
+            // 打印完成，移除光标，补全最终带角标版本
+            cursor.remove();
+            renderPreview();
+            if (onDone) onDone();
+            return;
+          }
+          var stop = nextStopAfter(i);
+          // 若即将打印到违规词起点，先停顿再打印
+          if (stop && stop.pos === i) {
+            setTimeout(function () {
+              // 一次性打印整个违规词（保持词完整性）
+              previewEl.insertBefore(document.createTextNode(text.slice(i, i + stop.len)), cursor);
+              i += stop.len;
+              setTimeout(type, PAUSE); // 违规词后额外停顿
+            }, PAUSE);
+            return;
+          }
+          // 普通字符：单字打印
+          previewEl.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+          i++;
+          setTimeout(type, CHAR_INTERVAL);
+        }
+        type();
+      }
+
+      // 生成单个命中角标的 HTML（供 renderPreview 字符串拼接使用）
+      function buildMarkHtml(f) {
+        var cls = 'ref-mark';
+        var label;
+        if (f.ignored) { cls += ' resolved'; label = '✓'; }
+        else if (f.active) { cls += ' solid'; label = String(f.seq); }
+        else { cls += ' ghost'; label = String(f.seq); }
+        return '<sup class="' + cls + '" data-risk="' + f.id + '">[' + label + ']</sup>';
+      }
+
+      // 纯文本视图：展示改写后的干净文案（无任何样式标记）
+      function renderPlainView() {
+        previewEl.appendChild(document.createTextNode(rewrittenText));
+        previewCountEl.textContent = '合规改写版';
+        setPreviewMode('纯文本视图', 'bg-[#8E9B84]');
+        statModeEl.textContent = '纯文本';
+      }
+
+      // Diff 视图：前后对照（红色删除线 + 绿色加粗），仅展示、不参与计算
+      function renderDiffView() {
+        var before = originalText;
+        var after = rewrittenText;
+        // 若两者相同，则直接展示纯文本
+        if (before === after) {
+          renderPlainView();
+          return;
+        }
+        var idx = 0;
+        // 按 REWRITE_MAP 顺序，对原文逐词替换渲染
+        var steps = buildDiffSteps(before, after);
+        steps.forEach(function (step) {
+          if (step.type === 'same') {
+            previewEl.appendChild(document.createTextNode(step.text));
+          } else if (step.type === 'del') {
+            var del = document.createElement('span');
+            del.className = 'diff-del';
+            del.textContent = step.text;
+            previewEl.appendChild(del);
+          } else if (step.type === 'add') {
+            var add = document.createElement('span');
+            add.className = 'diff-add';
+            add.textContent = step.text;
+            previewEl.appendChild(add);
+          }
+        });
+        previewCountEl.textContent = 'Diff 视图';
+        setPreviewMode('Diff 对比', 'bg-[#9A7468]');
+        statModeEl.textContent = 'Diff';
+      }
+
+      // 计算 Diff 步骤：返回 [{type:'same'|'del'|'add', text}]
+      // 基于 REWRITE_MAP（长词优先）+ 实际发生的替换，生成前后对照
+      function buildDiffSteps(before, after) {
+        // 收集在 before 中实际发生替换的映射（长词优先，避免短词误伤长词）
+        var hits = [];
+        for (var i = 0; i < REWRITE_MAP.length; i++) {
+          var from = REWRITE_MAP[i].from;
+          var to = REWRITE_MAP[i].to;
+          var pos = before.indexOf(from);
+          while (pos !== -1) {
+            hits.push({ from: from, to: to, pos: pos, len: from.length });
+            pos = before.indexOf(from, pos + from.length);
+          }
+        }
+        // 按位置排序、去重重叠（长词优先）
+        hits.sort(function (a, b) { return a.pos - b.pos || b.len - a.len; });
+        var used = [];
+        hits.forEach(function (h) {
+          var overlap = used.some(function (u) {
+            return !(h.pos + h.len <= u.pos || h.pos >= u.pos + u.len);
+          });
+          if (!overlap) used.push(h);
+        });
+        used.sort(function (a, b) { return a.pos - b.pos; });
+
+        var tokens = [];
+        var cursor = 0;
+        used.forEach(function (h) {
+          if (h.pos > cursor) {
+            tokens.push({ type: 'same', text: before.slice(cursor, h.pos) });
+          }
+          tokens.push({ type: 'del', text: h.from });
+          tokens.push({ type: 'add', text: h.to });
+          cursor = h.pos + h.len;
+        });
+        if (cursor < before.length) tokens.push({ type: 'same', text: before.slice(cursor) });
+        return tokens;
+      }
+
+      function renderStats() {
+        if (!auditDone) {
+          statHitsEl.textContent = '';
+          statTypesEl.textContent = '';
+          statModeEl.textContent = '原文';
+          return;
+        }
+        statHitsEl.textContent = pad(findings.length);
+        var types = {};
+        findings.forEach(function (f) { f.categories.forEach(function (c) { types[c] = true; }); });
+        statTypesEl.textContent = pad(Object.keys(types).length);
+        if (diffApplied && viewMode === 'plain') statModeEl.textContent = '纯文本';
+        else if (diffApplied && viewMode === 'diff') statModeEl.textContent = 'Diff';
+        else if (diffApplied) statModeEl.textContent = '复审版';
+        else statModeEl.textContent = '原文';
+      }
+
+      /* ===================== 便利贴 ===================== */
+      function showStickyNote(anchorEl, id) {
+        hideStickyNote();
+        var f = findings.find(function (x) { return x.id === id; });
+        if (!f) return;
+
+        var note = document.createElement('div');
+        note.className = 'sticky-note';
+        note.setAttribute('data-note', '');
+
+        var title = document.createElement('div');
+        title.className = 'note-title';
+        title.textContent = CATEGORIES[f.main].name + ' · 主风险 ' + f.seq;
+        note.appendChild(title);
+
+        var tags = document.createElement('div');
+        tags.className = 'note-tags';
+        f.categories.forEach(function (c) {
+          var t = document.createElement('span');
+          t.className = 'note-tag' + (c === f.main ? ' main' : '');
+          t.textContent = CATEGORIES[c].name;
+          tags.appendChild(t);
+        });
+        note.appendChild(tags);
+
+        note.appendChild(makeRow('主扣分', CATEGORIES[f.main].name + '（扣 ' + f.points + ' 分）'));
+        note.appendChild(makeRow('核验依据', buildBasis(f)));
+        note.appendChild(makeRow('修改建议', buildAdvice(f.main)));
+
+        document.body.appendChild(note);
+        var rect = anchorEl.getBoundingClientRect();
+        var left = rect.left + rect.width / 2 - 124;
+        left = Math.max(12, Math.min(left, window.innerWidth - 260));
+        var top = rect.bottom + 12;
+        if (top + 220 > window.innerHeight) top = rect.top - 230;
+        note.style.left = left + 'px';
+        note.style.top = top + 'px';
+      }
+
+      function makeRow(label, text) {
+        var row = document.createElement('div');
+        row.className = 'note-row';
+        var l = document.createElement('span');
+        l.className = 'note-label';
+        l.textContent = label + '：';
+        row.appendChild(l);
+        row.appendChild(document.createTextNode(text));
+        return row;
+      }
+
+            function buildBasis(f) {
+        // 优先使用 AI 给出的真实判定理由（更精准、更可信）
+        if (f.aiReason) {
+          return 'AI 核验：' + f.aiReason;
+        }
+        if (f.main === 'hallucination') {
+          return '资质文档中未检索到「' + f.text + '」相关功效依据，判定为事实幻觉。';
+        }
+        if (f.main === 'medical') {
+          return '资质文档未收录「' + f.text + '」所宣称的功效，化妆品不得宣称疾病治疗或疗效功能。';
+        }
+        if (f.main === 'limit') {
+          return '「' + f.text + '」属《广告法》禁止的绝对化用语。';
+        }
+        if (f.main === 'drain') {
+          return '「' + f.text + '」涉嫌引导站外交易。';
+        }
+        return '未检索到对应依据。';
+      }
+
+      function buildAdvice(main) {
+        var map = {
+          limit: '删除或替换为相对化、客观的表述。',
+          medical: '改用体验化、非承诺式描述，避免宣称疗效。',
+          drain: '删除联系方式，引导用户通过平台官方渠道咨询。',
+          hallucination: '补充可核验的资质依据，或删除无依据的功效描述。'
+        };
+        return map[main] || '请人工复核。';
+      }
+
+      function hideStickyNote() {
+        document.querySelectorAll('.sticky-note[data-note]').forEach(function (el) { el.remove(); });
+      }
+
+      /* ===================== 审计蒙版 ===================== */
+           async function runAudit() {
+        // 读取规则、以输入框当前内容为审计数据源（含改写后的纯文本）
+        readRules();
+        currentText = textareaEl.value;
+        // 重置状态：离开 Diff / 纯文本视图，回到审计渲染
+        diffApplied = false;
+        viewMode = 'diff';
+        renderViewToggle();
+        // 第一层：规则引擎快速过滤（瞬间完成）
+        findings = findFindings();
+        auditDone = false;
+
+        var overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        var card = document.createElement('div');
+        card.className = 'overlay-card';
+        var t = document.createElement('div');
+        t.className = 'overlay-title';
+        t.textContent = '正在执行交叉审核';
+        var s = document.createElement('div');
+        s.className = 'overlay-sub';
+        s.textContent = '第一层：规则引擎校验中…';
+        var track = document.createElement('div');
+        track.className = 'progress-track';
+        var fill = document.createElement('div');
+        fill.className = 'progress-fill';
+        track.appendChild(fill);
+        card.appendChild(t); card.appendChild(s); card.appendChild(track);
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+
+        requestAnimationFrame(function () { fill.style.width = '60%'; });
+        // 让第一层"规则引擎"停留一下，用户能看清两层依次工作
+        await sleep(800);
+
+        // 第二层：AI 语义审核（事实幻觉），补充规则漏掉的虚假宣传
+        if (enabledRules.hallucination) {
+          s.textContent = '第二层：AI 语义深度审核中…';
+          try {
+            var credential = CREDENTIAL;
+            var aiClaims = await checkHallucinationAI(currentText, credential);
+            mergeAIClaims(aiClaims);
+          } catch (err) {
+            // AI 调用失败不影响规则层结果，静默降级
+            console.log('AI 审核降级（使用规则层结果）：', err);
+          }
+        }
+
+        fill.style.width = '100%';
+
+        setTimeout(function () {
+          var done = document.createElement('div');
+          done.className = 'overlay-done';
+          done.textContent = '审核完成';
+          card.appendChild(done);
+          auditDone = true;
+          // 打字机逐字打印正文（打印到违规词时停顿），完成后触发评分/扣分项渲染
+          typewriterPreview(function () {
+            renderStats();
+            renderRiskList();
+            renderScore();
+          });
+          setTimeout(function () { overlay.remove(); }, 700);
+        }, 600);
+      }
+
+      // 把 AI 发现的虚假宣传合并进 findings（去重：规则层已命中的位置不重复加）
+      function mergeAIClaims(aiClaims) {
+        if (!aiClaims || !aiClaims.length) return;
+        aiClaims.forEach(function (c) {
+          var claimText = (c.claim || '').trim();
+          if (!claimText) return;
+          var pos = currentText.indexOf(claimText);
+          if (pos === -1) return; // AI 返回的片段在原文找不到，跳过
+          // 去重：若该位置已被规则层命中，只补充"幻觉"标签，不新增
+          var overlapped = false;
+          for (var i = 0; i < findings.length; i++) {
+            var f = findings[i];
+            if (pos < f.pos + f.text.length && pos + claimText.length > f.pos) {
+              if (f.categories.indexOf('hallucination') === -1) {
+                f.categories.push('hallucination');
+                f.catEnabled.hallucination = enabledRules.hallucination;
+              }
+              f.aiReason = c.reason || '';
+              overlapped = true;
+              break;
+            }
+          }
+          if (overlapped) return;
+          // 新增一条 AI 发现的 finding
+          var nf = {
+            id: 'AI' + (findings.length + 1),
+            text: claimText,
+            pos: pos,
+            categories: ['hallucination'],
+            catEnabled: { hallucination: enabledRules.hallucination },
+            ignored: false,
+            aiReason: c.reason || ''
+          };
+          findings.push(nf);
+        });
+        // 重新计算主风险 / 扣分 / 编号（复用原逻辑）
+        findings.forEach(function (f) {
+          f.categories.sort(function (a, b) {
+            return CATEGORIES[a].priority - CATEGORIES[b].priority;
+          });
+          f.main = f.categories[0];
+          f.points = CATEGORIES[f.main].points;
+          f.active = f.catEnabled[f.main] === true;
+          if (!f.active) f.points = 0;
+        });
+        findings.sort(function (a, b) { return a.pos - b.pos; });
+        findings.forEach(function (f, idx) { f.seq = idx + 1; });
+      }  
+
+      // 复审（供重写后自动复审 / 版本切换复用）：对指定文本重新扫描并同步刷新全部结果。
+      // 与 runAudit 的区别：不弹蒙版、不做打字机，直接同步完成复审并刷新展示。
+      async function reaudit(text) {
+        currentText = text;
+        auditDone = true;
+        findings = findFindings(text);
+        renderPreview();
+        renderStats();
+        renderRiskList();
+        renderScore();
+      }
+
+      /* ===================== 人工终审 ===================== */
+      function nowTime() {
+        var d = new Date();
+        function p(n) { return n < 10 ? '0' + n : '' + n; }
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+      }
+
+      function submitReview() {
+        var conclusionMap = { pass: '通过放行', reject: '驳回修改', miss: '机器漏检', false: '机器误判' };
+        var conclusion = conclusionMap[reviewConclusionEl.value];
+        var note = reviewNoteEl.value.trim() || '（无备注）';
+        if (reviewLogEl.querySelector('p') && reviewLogEl.textContent.indexOf('暂无') !== -1) {
+          reviewLogEl.innerHTML = '';
+        }
+        var item = document.createElement('div');
+        item.className = 'rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-4 py-3';
+        item.innerHTML =
+          '<div class="flex items-center justify-between">' +
+            '<span class="text-xs font-semibold text-[#5B4C42]">' + conclusion + '</span>' +
+            '<span class="font-mono text-[10px] text-[#A09286]">' + nowTime() + '</span>' +
+          '</div>' +
+          '<p class="mt-1.5 text-[11px] leading-5 text-[#97897E]">' + escapeHtml(note) + '</p>';
+        reviewLogEl.insertBefore(item, reviewLogEl.firstChild);
+        reviewNoteEl.value = '';
+        toast('终审已提交：' + conclusion);
+      }
+
+      // 判断当前结论是否触发「加入评测资产」按钮显示（仅 漏检/误判）
+      function syncBadcaseBtn() {
+        var v = reviewConclusionEl.value;
+        var show = (v === 'miss' || v === 'false');
+        if (show) {
+          addBadcaseBtn.classList.remove('hidden');
+          addBadcaseBtn.classList.add('flex');
+        } else {
+          addBadcaseBtn.classList.add('hidden');
+          addBadcaseBtn.classList.remove('flex');
+        }
+      }
+
+      // 通用：追加一条 BadCase 记录（自增编号 + 打标签 + 去重 + 追加顶部），返回是否成功
+      function pushBadcase(text, type, reason) {
+        text = (text || '').trim();
+        if (!text) return false;
+        var tag = type === 'miss' ? '漏检' : '误判';
+        // 重复校验：相同原文 + 相同类型，不重复新增
+        var dup = badcases.some(function (b) { return b.text === text && b.type === type; });
+        if (dup) {
+          toast('该记录已存在，未重复添加');
+          return false;
+        }
+        // 自增编号：取当前最大 BC 编号 +1
+        var maxNum = 0;
+        badcases.forEach(function (b) {
+          var n = parseInt(String(b.id).replace('BC-', ''), 10);
+          if (!isNaN(n) && n > maxNum) maxNum = n;
+        });
+        var newId = 'BC-' + String(maxNum + 1).padStart(3, '0');
+        var record = { id: newId, text: text, tag: tag, type: type, reason: reason || (type === 'miss' ? '机器未检出的风险' : '机器误判的风险') };
+        badcases.unshift(record); // 追加到顶部
+        renderBadcases(currentBadcaseFilter);
+        return true;
+      }
+
+      // 加入评测资产（BadCase）：读终审结论与备注，复用 pushBadcase
+      function addBadcase() {
+        var v = reviewConclusionEl.value;
+        if (v !== 'miss' && v !== 'false') { toast('请先选择「机器漏检」或「机器误判」'); return; }
+        var text = textareaEl.value.trim() || currentText;
+        var note = reviewNoteEl.value.trim();
+        var type = v === 'miss' ? 'miss' : 'false';
+        if (pushBadcase(text, type, note)) {
+          toast('已成功添加至评测资产，用于后续规则迭代');
+        }
+      }
+
+      /* ===================== 评测资产 ===================== */
+      function renderBadcases(filter) {
+        var list = filter === 'all' ? badcases : badcases.filter(function (b) { return b.type === filter; });
+        if (list.length === 0) {
+          badcaseListEl.innerHTML = '<p class="text-[11px] text-[#B4A99F]">无匹配案例</p>';
+          return;
+        }
+        badcaseListEl.innerHTML = '';
+        list.forEach(function (b) {
+          var item = document.createElement('div');
+          item.className = 'rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-4 py-3.5';
+          item.innerHTML =
+            '<div class="flex items-center justify-between">' +
+              '<span class="font-mono text-[10px] text-[#A09286]">' + b.id + '</span>' +
+              '<span class="rounded-full px-2 py-0.5 text-[10px] font-medium ' + (b.type === 'miss' ? 'bg-[#F8EDEB] text-[#AA665F]' : 'bg-[#EEF4EA] text-[#7E9A73]') + '">' + b.tag + '</span>' +
+            '</div>' +
+            '<p class="mt-2 text-xs leading-5 text-[#5B4C42]">' + escapeHtml(b.text) + '</p>' +
+            '<p class="mt-1.5 text-[11px] leading-4 text-[#A09286]">' + escapeHtml(b.reason) + '</p>' +
+            '<button type="button" class="badcase-add mt-3 cursor-pointer rounded-lg border border-[#E0D5C9] px-2.5 py-1.5 text-[10px] font-medium text-[#8B7F75] transition-colors hover:bg-[#F5EAE5] hover:text-[#67594F] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/30">回流加入评测集</button>';
+          badcaseListEl.appendChild(item);
+        });
+        badcaseListEl.querySelectorAll('.badcase-add').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            toast('已加入评测集：' + btn.closest('.rounded-xl').querySelector('.font-mono').textContent);
+          });
+        });
+      }
+
+      /* ===================== 评测集批量校验 ===================== */
+      // 类别 key → 中文标签
+      var CAT_NAME = { limit: '广告法极限词', medical: '医疗功效承诺', drain: '站外引流', hallucination: '事实幻觉' };
+
+      // 运行批量评测：复用 findFindings/analyzeText，逐条对比预期
+      function runEval() {
+        var set = EVAL_SETS[currentEvalSetKey] || EVAL_SET_BASE;
+        evalResults = [];
+        set.forEach(function (s) {
+          var actualTypes = analyzeText(s.text);
+          var actualRisk = actualTypes.length > 0;
+          var status; // 'correct' | 'miss' | 'false'
+          if (s.expectRisk === true) {
+            status = actualRisk ? 'correct' : 'miss';
+          } else {
+            status = actualRisk ? 'false' : 'correct';
+          }
+          evalResults.push({
+            id: s.id,
+            text: s.text,
+            source: s.source,
+            expectRisk: s.expectRisk,
+            expectTypes: s.expectTypes,
+            actualTypes: actualTypes,
+            status: status
+          });
+        });
+        renderEvalStats();
+        renderEvalList(currentEvalFilter);
+        toast('批量评测完成，共 ' + evalResults.length + ' 条样本');
+      }
+
+      // 重置统计卡片为「待评测」态
+      function resetEvalStats() {
+        evalResults = [];
+        evalStatsEl.querySelectorAll('p.font-mono').forEach(function (el) {
+          el.textContent = '—';
+        });
+        evalListEl.innerHTML = '<p class="text-[11px] text-[#B4A99F]">点击「一键批量评测」后展示结果</p>';
+      }
+
+      // 切换评测数据集：清空结果、重置统计与筛选
+      function switchEvalSet(key) {
+        currentEvalSetKey = key;
+        currentEvalFilter = 'all';
+        // 重置筛选胶囊样式为「全部」高亮
+        document.querySelectorAll('.eval-filter').forEach(function (b) {
+          b.className = b.getAttribute('data-eval-filter') === 'all'
+            ? 'eval-filter cursor-pointer rounded-full bg-[#F5EAE5] px-3 py-1.5 text-[11px] font-medium text-[#886255] transition-colors hover:bg-[#F0E1DA]'
+            : 'eval-filter cursor-pointer rounded-full bg-[#F3F1ED] px-3 py-1.5 text-[11px] font-medium text-[#93857A] transition-colors hover:bg-[#ECE7E0]';
+        });
+        resetEvalStats();
+      }
+
+      // 渲染统计指标
+      function renderEvalStats() {
+        var total = evalResults.length;
+        var riskCount = evalResults.filter(function (r) { return r.expectRisk; }).length;
+        var okCount = total - riskCount;
+        var detected = evalResults.filter(function (r) { return r.actualTypes.length > 0; }).length;
+        var missCount = evalResults.filter(function (r) { return r.status === 'miss'; }).length;
+        var falseCount = evalResults.filter(function (r) { return r.status === 'false'; }).length;
+        var correctCount = evalResults.filter(function (r) { return r.status === 'correct'; }).length;
+        var accuracy = total > 0 ? (correctCount / total * 100) : 0;
+        var accStr = accuracy.toFixed(1) + '%';
+
+        var cells = evalStatsEl.querySelectorAll('p.font-mono');
+        var vals = [total, riskCount, okCount, detected, missCount, falseCount, accStr];
+        cells.forEach(function (el, i) {
+          el.textContent = String(vals[i]);
+        });
+      }
+
+      // 渲染结果列表（支持筛选）
+      function renderEvalList(filter) {
+        var list = filter === 'all' ? evalResults : evalResults.filter(function (r) { return r.status === filter; });
+        if (list.length === 0) {
+          evalListEl.innerHTML = '<p class="text-[11px] text-[#B4A99F]">无匹配结果</p>';
+          return;
+        }
+        evalListEl.innerHTML = '';
+        list.forEach(function (r) {
+          var item = document.createElement('div');
+          item.className = 'rounded-xl border border-[#EEE8E0] bg-[#FCFBF9] px-4 py-3.5';
+
+          // 状态徽标
+          var statusBadge = '';
+          if (r.status === 'correct') {
+            statusBadge = '<span class="rounded-full bg-[#EEF4EA] px-2 py-0.5 text-[10px] font-medium text-[#7E9A73]">正确</span>';
+          } else if (r.status === 'miss') {
+            statusBadge = '<span class="rounded-full bg-[#F8EDEB] px-2 py-0.5 text-[10px] font-medium text-[#AA665F]">漏检</span>';
+          } else {
+            statusBadge = '<span class="rounded-full bg-[#F6EBD9] px-2 py-0.5 text-[10px] font-medium text-[#A0783F]">误判</span>';
+          }
+
+          // 预期标签
+          var expectTags = r.expectTypes.length
+            ? r.expectTypes.map(function (c) { return CAT_NAME[c] || c; }).join('、')
+            : '（预期合规）';
+          // 实际检出标签
+          var actualTags = r.actualTypes.length
+            ? r.actualTypes.map(function (c) { return CAT_NAME[c] || c; }).join('、')
+            : '（未检出）';
+
+          item.innerHTML =
+            '<div class="flex items-center justify-between">' +
+              '<span class="font-mono text-[10px] text-[#A09286]">' + r.id + ' · ' + escapeHtml(r.source) + '</span>' +
+              statusBadge +
+            '</div>' +
+            '<p class="mt-2 text-xs leading-5 text-[#5B4C42]">' + escapeHtml(r.text) + '</p>' +
+            '<div class="mt-2 flex flex-col gap-1 text-[10px] leading-4">' +
+              '<span class="text-[#A09286]">预期：' + escapeHtml(expectTags) + '</span>' +
+              '<span class="text-[#A09286]">实际：' + escapeHtml(actualTags) + '</span>' +
+            '</div>';
+
+          // 漏检/误判条目提供「加入 BadCase」按钮
+          if (r.status === 'miss' || r.status === 'false') {
+            item.innerHTML +=
+              '<button type="button" class="eval-add-badcase mt-3 cursor-pointer rounded-lg border border-[#E0D5C9] px-2.5 py-1.5 text-[10px] font-medium text-[#8B7F75] transition-colors hover:bg-[#F5EAE5] hover:text-[#67594F] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/30" data-type="' + r.status + '">加入 BadCase</button>';
+          }
+
+          evalListEl.appendChild(item);
+        });
+
+        // 绑定「加入 BadCase」
+        evalListEl.querySelectorAll('.eval-add-badcase').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var type = btn.getAttribute('data-type');
+            var card = btn.closest('.rounded-xl');
+            var text = card.querySelector('p.text-xs').textContent;
+            var ok = pushBadcase(text, type, '');
+            if (ok) toast('已加入 BadCase，用于后续规则迭代');
+          });
+        });
+      }
+
+      /* ===================== Toast ===================== */
+      function toast(msg) {
+        var existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        var el = document.createElement('div');
+        el.className = 'toast';
+        el.textContent = msg;
+        document.body.appendChild(el);
+        requestAnimationFrame(function () { el.classList.add('show'); });
+        setTimeout(function () { el.classList.remove('show'); setTimeout(function () { el.remove(); }, 300); }, 1800);
+      }
+
+      /* ===================== 事件绑定 ===================== */
+      startBtn.addEventListener('click', function () {
+        runAudit();
+      });
+
+      textareaEl.addEventListener('input', function () {
+        currentText = textareaEl.value;
+        auditDone = false; diffApplied = false;
+        viewMode = 'diff';
+        rewrittenText = '';
+        currentVersionIndex = -1;   // 手动编辑后回到当前编辑态，取消版本选中
+        renderViewToggle();
+        clearReport();
+        renderPreview(); renderStats();
+      });
+
+      rulePills.forEach(function (pill) {
+        pill.addEventListener('click', function (e) {
+          var input = pill.querySelector('input');
+          // 让 checkbox 自然切换
+          input.checked = !input.checked;
+          readRules();
+        });
+      });
+
+      document.addEventListener('click', function (e) {
+        var mark = e.target && e.target.closest ? e.target.closest('.ref-mark') : null;
+        if (mark) {
+          var id = mark.getAttribute('data-risk');
+          showStickyNote(mark, id);
+          return;
+        }
+        if (!(e.target && e.target.closest && e.target.closest('.sticky-note'))) hideStickyNote();
+      });
+
+      // Tab 切换
+      document.querySelectorAll('.tab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var name = btn.getAttribute('data-tab');
+          document.querySelectorAll('.tab-btn').forEach(function (b) {
+            var active = b === btn;
+            b.setAttribute('aria-selected', active ? 'true' : 'false');
+            b.className = active
+              ? 'tab-btn cursor-pointer rounded-full bg-white px-2 py-2.5 text-xs font-semibold text-[#6E5448] shadow-[0_3px_10px_rgba(74,64,54,0.07)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40'
+              : 'tab-btn cursor-pointer rounded-full px-2 py-2.5 text-xs font-medium text-[#9A8D82] transition-colors hover:text-[#6E5D52] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40';
+          });
+          document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.add('hidden'); });
+          var panel = document.getElementById('panel-' + name);
+          if (panel) panel.classList.remove('hidden');
+        });
+      });
+
+           // 重写按钮：AI 合规改写 + 规则兜底 + 版本迭代 + 自动复审
+      rewriteBtn.addEventListener('click', async function () {
+        if (!auditDone) { toast('请先执行交叉审核'); return; }
+
+        // 数据源：读取输入框当前现存文本（链式迭代 V1→V2→V3，不回退到最开始的原文）
+        var sourceText = textareaEl.value;
+        var rewriteAll = rewriteAllEl.checked;
+
+        // 版本控制校验：扫描源文本，若不存在「未忽略、待修复」的风险，则提示无需改写
+        var pending = findings.filter(function (f) { return f.active && !f.ignored; });
+        if (pending.length === 0) {
+          toast('当前文案已合规，无需再次改写');
+          return;
+        }
+
+        // 记录本次重写前的原文（用于 Diff 对比 + 版本记录）
+        var beforeText = sourceText;
+
+        // —— loading 状态：AI 改写要等几秒，按钮变灰并提示 ——
+        var originalBtnHtml = rewriteBtn.innerHTML;
+        rewriteBtn.disabled = true;
+        rewriteBtn.style.opacity = '0.6';
+        rewriteBtn.innerHTML = '<span class="text-sm font-semibold">AI 正在改写文案…</span>';
+
+        var afterText;
+        var aiChanges = [];
+        try {
+          // 主力方案：AI 合规改写
+          // 把当前未豁免的风险传给 AI（rewriteAll 时传全部）
+          var risksForAI = rewriteAll ? findings : findings.filter(function (f) { return !f.ignored; });
+          var aiResult = await rewriteComplianceAI(beforeText, risksForAI, CREDENTIAL);
+          afterText = aiResult.rewritten;
+          aiChanges = aiResult.changes || [];
+        } catch (err) {
+          // 兜底方案：AI 失败则降级用规则替换表
+          console.log('AI 改写降级（使用规则替换表）：', err);
+          toast('AI 繁忙，已使用规则改写');
+          afterText = computeRewrittenText(beforeText, rewriteAll);
+        }
+
+        // 恢复按钮
+        rewriteBtn.disabled = false;
+        rewriteBtn.style.opacity = '';
+        rewriteBtn.innerHTML = originalBtnHtml;
+
+        // 只有文本真实变更时才继续；否则提示并终止，避免重复无效版本
+        if (!afterText || afterText === beforeText) {
+          toast('未检出可改写内容，文案已合规');
+          return;
+        }
+
+        // 链式迭代状态更新
+        originalText = beforeText;   // Diff 对比基准 = 本次重写前的文本
+        rewrittenText = afterText;
+        currentText = afterText;
+        // 同步回左侧输入框：只写入干净纯文本，无任何 HTML 标签 / 样式
+        textareaEl.value = afterText;
+        // 存下本次 AI 修改说明（供后续展示）
+        lastAIChanges = aiChanges;
+
+        diffApplied = true;
+        viewMode = 'audited';   // 重写后默认展示新文案的复审角标，而非 Diff 视图
+        renderViewToggle();
+
+        // 自动复审：复用交叉审核流程对新文案重新扫描，并同步刷新全部结果
+        await reaudit(afterText);
+
+        // 版本记录：原始版本（首次）+ 每次合规改写版本（仅真实变更时新增）
+        if (versionRecords.length === 0) {
+          versionRecords.push({ label: '原始版本', text: BAD_TEXT, prevText: '', time: nowTime() });
+        }
+        versionRecords.push({ label: 'AI 合规改写版本', text: afterText, prevText: beforeText, time: nowTime() });
+        currentVersionIndex = -1;   // 重写后回到「当前编辑态」，不高亮任何历史版本
+        renderVersionRecords();
+        renderReportVersionBadge();
+
+        toast('AI 已完成合规改写并自动复审');
+      });
+
+
+      // 生成干净纯文本：按 REWRITE_MAP（长词优先）逐条替换，豁免词保持原样
+      function computeRewrittenText(text, rewriteAll) {
+        var out = text;
+        for (var i = 0; i < REWRITE_MAP.length; i++) {
+          var from = REWRITE_MAP[i].from;
+          var to = REWRITE_MAP[i].to;
+          // 判断该 from 是否对应某个被豁免的 finding（豁免词在未勾选「连豁免一起重写」时保持原样）
+          var isExempt = !rewriteAll && findings.some(function (f) {
+            return f.ignored && (f.text.indexOf(from) !== -1 || from.indexOf(f.text) !== -1);
+          });
+          if (isExempt) continue;
+          out = replaceAll(out, from, to);
+        }
+        return out;
+      }
+
+      // 安全的全局替换（普通字符串，避免正则特殊字符问题）
+      function replaceAll(str, from, to) {
+        if (from === '') return str;
+        var result = '';
+        var idx = 0;
+        var pos = str.indexOf(from, idx);
+        while (pos !== -1) {
+          result += str.slice(idx, pos) + to;
+          idx = pos + from.length;
+          pos = str.indexOf(from, idx);
+        }
+        result += str.slice(idx);
+        return result;
+      }
+
+      // 渲染视图切换按钮（仅在重写后显示）
+      function renderViewToggle() {
+        if (diffApplied) {
+          viewToggleEl.classList.remove('hidden');
+          viewToggleEl.classList.add('flex');
+        } else {
+          viewToggleEl.classList.add('hidden');
+          viewToggleEl.classList.remove('flex');
+        }
+        // 高亮当前视图；'audited'（默认复审视图）时两个按钮均不高亮
+        document.querySelectorAll('.view-btn').forEach(function (b) {
+          var active = b.getAttribute('data-view') === viewMode && viewMode !== 'audited';
+          b.className = active
+            ? 'view-btn cursor-pointer rounded-full bg-white px-4 py-2 text-xs font-semibold text-[#6E5448] shadow-[0_3px_10px_rgba(74,64,54,0.07)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40'
+            : 'view-btn cursor-pointer rounded-full px-4 py-2 text-xs font-medium text-[#9A8D82] transition-colors hover:text-[#6E5D52] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40';
+        });
+      }
+
+      // 渲染版本记录（可选加分项）
+      function renderVersionRecords() {
+        if (versionRecords.length === 0) { versionRecordsEl.classList.add('hidden'); return; }
+        versionRecordsEl.classList.remove('hidden');
+        versionRecordsEl.innerHTML = '';
+        var title = document.createElement('div');
+        title.className = 'mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#AA9588]';
+        title.textContent = '版本记录';
+        versionRecordsEl.appendChild(title);
+        versionRecords.forEach(function (v, i) {
+          var row = document.createElement('div');
+          var isCurrent = (i === currentVersionIndex);
+          // 当前选中项高亮：灰青蓝浅底 + 描边，明确区分
+          row.className = 'version-row flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 transition-colors ' +
+            (isCurrent ? 'bg-[#EAF2F6] ring-1 ring-[#A5C8D8]' : 'bg-[#FCFBF9] hover:bg-[#F0EEEA]');
+          row.setAttribute('data-version', String(i));
+          row.innerHTML =
+            '<span class="inline-flex items-center gap-2 text-[11px] font-medium text-[#5B4C42]">' +
+              '<span class="font-mono text-[10px] text-[#9A7468]">V' + (i + 1) + '</span>' + escapeHtml(v.label) +
+            '</span>' +
+            '<span class="font-mono text-[9px] text-[#A09286]">' + v.time + '</span>';
+          versionRecordsEl.appendChild(row);
+        });
+        // 绑定点击：切到该版本文本并复审
+        versionRecordsEl.querySelectorAll('.version-row').forEach(function (row) {
+          row.addEventListener('click', function () {
+            var idx = parseInt(row.getAttribute('data-version'), 10);
+            switchToVersion(idx);
+          });
+        });
+      }
+
+      // 切换到指定版本：中栏预览切到该文本，并复用同一套审核流程复审同步全部结果
+      function switchToVersion(idx) {
+        if (idx < 0 || idx >= versionRecords.length) return;
+        var v = versionRecords[idx];
+        currentVersionIndex = idx;
+
+        // 同步输入框与正文真源到该版本
+        textareaEl.value = v.text;
+        currentText = v.text;
+
+        // Diff 对比基准跟随当前选中版本：相对其重写前文本（首个版本无前文，基准即自身）
+        originalText = v.prevText || v.text;
+        rewrittenText = v.text;
+        diffApplied = true;      // 允许查看该版本的 Diff 对比
+        viewMode = 'audited';    // 默认展示该版本的审核角标
+        renderViewToggle();
+
+        // 复用同一套审核流程复审该版本文本，同步刷新角标/报告/得分/印章/列表/统计
+        reaudit(v.text);
+
+        // 刷新版本记录高亮
+        renderVersionRecords();
+        renderReportVersionBadge();
+      }
+
+      function renderReportVersionBadge() {
+        // 在审计报告标题旁标注当前版本
+        var total = versionRecords.length;
+        if (total > 0) {
+          var suffix = currentVersionIndex >= 0
+            ? '查看 V' + (currentVersionIndex + 1)
+            : '已改写 ' + (total - 1) + ' 次';
+          reportTitleEl.textContent = '综合合规得分 · ' + suffix;
+        }
+      }
+
+      // 人工终审提交
+      reviewSubmitEl.addEventListener('click', submitReview);
+
+      // 结论下拉联动：选中 漏检/误判 显示「加入评测资产」按钮，否则隐藏
+      reviewConclusionEl.addEventListener('change', syncBadcaseBtn);
+
+      // 加入评测资产（BadCase）
+      addBadcaseBtn.addEventListener('click', addBadcase);
+
+      // 视图切换：查看 Diff 对比 / 查看纯文本
+      document.querySelectorAll('.view-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          viewMode = btn.getAttribute('data-view');
+          renderViewToggle();
+          renderPreview();
+        });
+      });
+
+      // 评测资产筛选
+      document.querySelectorAll('.asset-filter').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.asset-filter').forEach(function (b) {
+            b.className = b === btn
+              ? 'asset-filter cursor-pointer rounded-full bg-[#F5EAE5] px-3 py-1.5 text-[11px] font-medium text-[#886255] transition-colors hover:bg-[#F0E1DA]'
+              : 'asset-filter cursor-pointer rounded-full bg-[#F3F1ED] px-3 py-1.5 text-[11px] font-medium text-[#93857A] transition-colors hover:bg-[#ECE7E0]';
+          });
+          currentBadcaseFilter = btn.getAttribute('data-filter');
+          renderBadcases(currentBadcaseFilter);
+        });
+      });
+
+      // 一键批量评测
+      evalRunBtn.addEventListener('click', runEval);
+
+      // 产品资质文档折叠面板展开/收起
+      var credentialToggleEl = document.getElementById('credential-toggle');
+      var credentialPanelEl = document.getElementById('credential-panel');
+      var credentialChevronEl = document.getElementById('credential-chevron');
+      if (credentialToggleEl && credentialPanelEl) {
+        credentialToggleEl.addEventListener('click', function () {
+          var expanded = credentialToggleEl.getAttribute('aria-expanded') === 'true';
+          credentialToggleEl.setAttribute('aria-expanded', String(!expanded));
+          credentialPanelEl.classList.toggle('hidden', expanded);
+          credentialChevronEl.style.transform = expanded ? 'rotate(0deg)' : 'rotate(180deg)';
+        });
+      }
+
+      // 评测数据集切换
+      evalSetSelectEl.addEventListener('change', function () {
+        switchEvalSet(evalSetSelectEl.value);
+      });
+
+      // 评测结果筛选
+      document.querySelectorAll('.eval-filter').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.eval-filter').forEach(function (b) {
+            b.className = b === btn
+              ? 'eval-filter cursor-pointer rounded-full bg-[#F5EAE5] px-3 py-1.5 text-[11px] font-medium text-[#886255] transition-colors hover:bg-[#F0E1DA]'
+              : 'eval-filter cursor-pointer rounded-full bg-[#F3F1ED] px-3 py-1.5 text-[11px] font-medium text-[#93857A] transition-colors hover:bg-[#ECE7E0]';
+          });
+          currentEvalFilter = btn.getAttribute('data-eval-filter');
+          renderEvalList(currentEvalFilter);
+        });
+      });
+
+      /* ===================== 鼠标光晕（审查员视线） ===================== */
+      var cursorGlow = document.createElement('div');
+      cursorGlow.className = 'cursor-glow';
+      document.body.appendChild(cursorGlow);
+      var previewCard = previewEl.closest('section') || previewEl.closest('aside');
+      if (previewCard) {
+        previewCard.addEventListener('mousemove', function (e) {
+          cursorGlow.style.left = e.clientX + 'px';
+          cursorGlow.style.top = e.clientY + 'px';
+          cursorGlow.classList.add('is-active');
+        });
+        previewCard.addEventListener('mouseleave', function () {
+          cursorGlow.classList.remove('is-active');
+        });
+      }
+
+      /* ===================== 初始化 ===================== */
+      readRules();
+      currentText = BAD_TEXT;
+      textareaEl.value = BAD_TEXT;
+      clearReport();
+      renderViewToggle();
+      renderPreview();
+      renderStats();
+      renderBadcases('all');
+    })();
+  </script>
+
+  <!-- =====================================================================
+       页面层级 / 开场动画 / 导航页 / 模态框 逻辑
+       ===================================================================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      var splashEl = document.getElementById('splash-screen');
+      var navEl = document.getElementById('nav-page');
+      var mainEl = document.getElementById('main-app');
+      var splitTop = document.getElementById('split-top');
+      var splitBottom = document.getElementById('split-bottom');
+      var waveTitle = document.getElementById('wave-title');
+      var zipPull = document.getElementById('zip-pull');
+      var beginBtn = document.getElementById('begin-btn');
+
+      /* ---------- 波纹文字：7 个字 animation-delay 相邻递增 0.1s ---------- */
+      if (waveTitle) {
+        var spans = waveTitle.querySelectorAll('span');
+        for (var i = 0; i < spans.length; i++) {
+          spans[i].style.animationDelay = (i * 0.1) + 's';
+        }
+      }
+
+      /* ---------- 上下裂纹拖拽 ---------- */
+      var START_LEFT = 50;   // 按钮初始 left 百分比（屏幕中央棕色长条）
+      var THRESHOLD = 0.7;   // 裂开进度超过 70% 即完成
+      var dragging = false;
+      var startX = 0;        // 按下时的指针 X
+      var startLeftPct = 0;  // 按下时按钮的 left 百分比
+      var winW = 0;
+      var currentP = 0;      // 当前按钮 left 百分比 0~100
+      var currentCrack = 0;  // 当前裂开进度 0~1
+
+      function recalcWidth() {
+        winW = window.innerWidth || document.documentElement.clientWidth;
+      }
+      recalcWidth();
+
+      // 根据按钮 left 百分比 p（0~100）更新裂开进度与上下层位移
+      function applySplit(p) {
+        p = Math.max(0, Math.min(100, p));
+        currentP = p;
+        // 裂开进度：按钮从初始 START_LEFT 拖到 100% 时，crack 从 0 到 1
+        var crack = Math.max(0, Math.min(1, (p - START_LEFT) / (100 - START_LEFT)));
+        currentCrack = crack;
+        // 每层移动自身高度的百分比：上半层向上、下半层向下，像撕纸一样从中间裂开
+        var dy = crack * 100;
+        splitTop.style.transform = 'translateY(-' + dy + '%)';
+        splitBottom.style.transform = 'translateY(' + dy + '%)';
+        // 拉链头水平跟随
+        zipPull.style.left = p + '%';
+        // 裂得越开，波纹文字越淡
+        waveTitle.style.opacity = String(Math.max(0, 1 - crack * 1.5));
+      }
+
+      // 完成：上下两层快速裂开消失 → 显示导航页 → 隐藏开场层
+      function finishSplit() {
+        if (splashEl.classList.contains('finish')) return;
+        splashEl.classList.add('finish');
+        setTimeout(function () {
+          splashEl.classList.add('hidden');
+          navEl.style.display = 'block';
+        }, 580);
+      }
+
+      function onDragStart(clientX) {
+        dragging = true;
+        startX = clientX;
+        startLeftPct = currentP;
+        zipPull.classList.add('dragging');
+      }
+
+      function onDragMove(clientX) {
+        if (!dragging) return;
+        // 拖动距离（像素）→ 转换为百分比偏移
+        var delta = clientX - startX;
+        var deltaPct = (delta / winW) * 100;
+        var p = startLeftPct + deltaPct;
+        applySplit(p);
+      }
+
+      function onDragEnd() {
+        if (!dragging) return;
+        dragging = false;
+        zipPull.classList.remove('dragging');
+        if (currentCrack >= THRESHOLD) {
+          applySplit(100);
+          finishSplit();
+        } else {
+          // 未达阈值：回弹到初始位置（左侧棕色长条）
+          applySplit(START_LEFT);
+        }
+      }
+
+      /* ---------- 事件监听：全部绑定在 document 级别 ---------- */
+      // 鼠标
+      document.addEventListener('mousedown', function (e) {
+        if (e.target === beginBtn || beginBtn.contains(e.target)) {
+          e.preventDefault();
+          onDragStart(e.clientX);
+        }
+      });
+      document.addEventListener('mousemove', function (e) {
+        if (dragging) {
+          e.preventDefault();
+          onDragMove(e.clientX);
+        }
+      });
+      document.addEventListener('mouseup', function () {
+        onDragEnd();
+      });
+
+      // 触摸
+      document.addEventListener('touchstart', function (e) {
+        if (e.target === beginBtn || beginBtn.contains(e.target)) {
+          var t = e.touches[0];
+          onDragStart(t.clientX);
+        }
+      }, { passive: false });
+      document.addEventListener('touchmove', function (e) {
+        if (!dragging) return;
+        var t = e.touches[0];
+        onDragMove(t.clientX);
+        e.preventDefault();
+      }, { passive: false });
+      document.addEventListener('touchend', function () {
+        onDragEnd();
+      });
+
+      window.addEventListener('resize', function () {
+        recalcWidth();
+        if (!dragging) applySplit(START_LEFT);
+      });
+
+      /* ---------- 导航页交互 ---------- */
+      function showMain() {
+        navEl.style.display = 'none';
+        mainEl.style.display = 'block';
+      }
+      function showNav() {
+        mainEl.style.display = 'none';
+        navEl.style.display = 'block';
+      }
+
+      function openModal(id) {
+        var m = document.getElementById(id);
+        if (m) m.style.display = 'flex';
+      }
+      function closeModal(id) {
+        var m = document.getElementById(id);
+        if (m) m.style.display = 'none';
+      }
+
+      var navBtns = document.querySelectorAll('#nav-page [data-nav]');
+      navBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var target = btn.getAttribute('data-nav');
+          if (target === 'workbench') {
+            showMain();
+          } else if (target === 'workflow') {
+            openModal('modal-workflow');
+          } else if (target === 'prd') {
+            // PRD：跳转外链（替换为真实文档链接即可）
+            window.open('https://www.your-prd-link.com', '_blank');
+          }
+        });
+      });
+
+      // 返回导航按钮
+      var backBtn = document.getElementById('back-to-nav');
+      if (backBtn) {
+        backBtn.addEventListener('click', showNav);
+      }
+
+      // 模态框关闭：点右上角 × 或点遮罩空白处
+      document.querySelectorAll('.modal-close').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          closeModal(btn.getAttribute('data-close'));
+        });
+      });
+      document.querySelectorAll('.modal-backdrop').forEach(function (bd) {
+        bd.addEventListener('click', function (e) {
+          if (e.target === bd) bd.style.display = 'none';
+        });
+      });
+
+      /* ---------- 滚动渐显：下方条目卡片进入视口时淡入上浮一次（不循环） ---------- */
+      var revealObserver = null;
+      function wireReveal(node) {
+        if (!node || node.nodeType !== 1) return;
+        if (!('IntersectionObserver' in window)) return;
+        if (!revealObserver) {
+          revealObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                revealObserver.unobserve(entry.target);
+              }
+            });
+          }, { threshold: 0.12 });
+        }
+        if (node.classList.contains('reveal-on-scroll')) return;
+        node.classList.add('reveal-on-scroll');
+        revealObserver.observe(node);
+      }
+
+      // 对已有的条目容器及未来动态新增的条目统一启用滚动渐显（纯视觉，不触碰业务逻辑）
+      ['#risk-list', '#badcase-list', '#eval-list', '#review-log'].forEach(function (sel) {
+        var container = document.querySelector(sel);
+        if (!container) return;
+        Array.prototype.forEach.call(container.children, wireReveal);
+        if ('MutationObserver' in window) {
+          new MutationObserver(function (muts) {
+            muts.forEach(function (m) {
+              Array.prototype.forEach.call(m.addedNodes, function (n) {
+                if (n.nodeType === 1) {
+                  wireReveal(n);
+                  n.querySelectorAll && n.querySelectorAll('*').forEach && n.querySelectorAll('*').forEach(wireReveal);
+                }
+              });
+            });
+          }).observe(container, { childList: true });
+        }
+      });
+
+      /* ---------- 初始状态 ---------- */
+      // 开场层默认显示；导航页与工作台默认隐藏
+      applySplit(START_LEFT);
+      navEl.style.display = 'none';
+      mainEl.style.display = 'none';
+    })();
+  </script>
+
+  <!-- 复古手账装饰元素：静态摆放，不浮动、不闪烁、不遮挡功能控件 -->
+  <svg class="deco deco-bell" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 6 3 8H3c0-2 3-1 3-8Z"/>
+    <path d="M10 21h4"/>
+  </svg>
+  <svg class="deco deco-dove" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M3 14c3-2 6-1 8 1l7-4c1-.5 2-.5 3 0-.5 3-2 5-5 6-3 1-6 .5-9-1-2-1-3-1.5-4-2Z"/>
+    <path d="M14 17l2 3"/>
+    <circle cx="18" cy="10" r=".5" fill="currentColor"/>
+  </svg>
+</body>
+</html>
