@@ -305,205 +305,226 @@
        #nav-page       导航页          z-index: 99
        #main-app       三栏工作台      z-index: 1
        ===================================================================== */
+        /* =====================================================================
+       开场动画 —— 文案审核岛 · 横向传送带安检（复古冷灰，纯 CSS/SVG）
+       ===================================================================== */
     #splash-screen {
       position: fixed;
       inset: 0;
       z-index: 9999;
-      overflow: hidden;
-      background: transparent;
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    #nav-page {
-      position: fixed;
-      inset: 0;
-      z-index: 99;
-      display: block;
-      overflow: hidden;
-      background: #2a201a;
-    }
-    #main-app {
-      position: relative;
-      z-index: 1;
-      display: none;
-    }
-
-    /* =====================================================================
-       开场层 —— 上下两层「裂纹」开场
-       #splash-screen 分为上半层、下半层，各铺一张 bg.png（分别对齐顶部/底部）。
-       按住 BEGIN 向右拖动时，上半层向上移、下半层向下移，中间裂开露出猫咪导航页。
-       ===================================================================== */
-    /* 上下两层（裂纹的两半，各承载一张完整背景，通过 position 对齐顶部/底部） */
-    #splash-screen .split {
-      position: absolute;
-      left: 0;
-      right: 0;
-      width: 100%;
-      height: 50%;
-      overflow: hidden;
-      pointer-events: none;
-      will-change: transform;
-      transform: translateY(0);
-    }
-    #splash-screen .split.top { top: 0; }
-    #splash-screen .split.bottom { bottom: 0; }
-    /* 每层内铺一张完整背景图：上层对齐顶部，下层对齐底部，合拢即完整 bg.png */
-    #splash-screen .split .split-bg {
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 200%;
-      background-image: url('bg.png');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
-    #splash-screen .split.top .split-bg { top: 0; }
-    #splash-screen .split.bottom .split-bg { bottom: 0; }
-
-    /* 拉链头（BEGIN 按钮）：居中在棕色横向长条正中间 */
-    #splash-screen .zip-pull {
-      position: absolute;
-      left: 50%;
-      top: 65%;
-      transform: translateX(-50%);
-      z-index: 30;
-      cursor: grab;
-      touch-action: none;
-      -webkit-user-select: none;
-      user-select: none;
-      will-change: left;
-    }
-    #splash-screen .zip-pull.dragging { cursor: grabbing; }
-
-    /* BEGIN 按钮：棕色长条上的蓝色贴纸 */
-    .begin-btn {
-      position: relative;
-      display: inline-flex;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 16px 60px;
-      background: linear-gradient(180deg, #6b4a2f, #4a2f1c);
-      border-radius: 10px;
-      box-shadow: 0 8px 22px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12);
-      font-family: "IBM Plex Mono", monospace;
-      letter-spacing: .32em;
-      border: none;
-    }
-    .begin-btn::before,
-    .begin-btn::after {
-      content: "";
-      position: absolute;
-      top: 9px;
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: rgba(255,255,255,.25);
-    }
-    .begin-btn::before { left: 12px; }
-    .begin-btn::after  { right: 12px; }
-    .begin-btn .begin-sticker {
-      display: inline-block;
-      padding: 7px 22px;
-      background: #3b6fd4;
-      background: linear-gradient(180deg, #4a7fe0, #2f5cb8);
-      color: #fff;
-      border-radius: 8px;
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: .18em;
-      text-indent: .18em;
-      box-shadow: 0 3px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.25);
-      transform: rotate(-2deg);
-      transition: transform .15s ease;
-    }
-    .begin-btn:hover .begin-sticker { transform: rotate(1deg) scale(1.04); }
-
-    /* BEGIN 按钮下方操作提示小字（棕色系，与手账风格统一，不遮挡铃铛与标题） */
-    .zip-hint {
-      display: block;
-      margin-top: 12px;
-      text-align: center;
-      font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
-      font-size: 12px;
-      letter-spacing: .2em;
-      text-indent: .2em;
-      color: #8C6954;
-      text-shadow: 0 1px 2px rgba(255, 255, 255, .7);
-      pointer-events: none;
+      gap: clamp(30px, 6vh, 70px);
+      overflow: hidden;
       user-select: none;
       -webkit-user-select: none;
+      background:
+        radial-gradient(ellipse 60% 45% at 50% 18%, rgba(114,140,163,.12), transparent 70%),
+        linear-gradient(180deg, #eaeef1 0%, #e4e8ea 55%, #dde2e4 100%);
+    }
+    #splash-screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"),
+        repeating-linear-gradient(0deg, rgba(68,76,85,.028) 0 1px, transparent 1px 3px);
     }
 
-    /* 波纹文字：正中央「营销文案处理岛」，粗衬线 + 深咖色 + 白色贴纸边 */
-    .wave-title {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 4;
-      display: flex;
-      gap: .04em;
+    /* —— 上半部：波动大标题「文案审核岛」 —— */
+    .scan-hero { position: relative; z-index: 2; text-align: center; }
+    .scan-hero-title {
+      display: flex; justify-content: center; gap: .04em;
       font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
       font-weight: 700;
-      font-size: clamp(40px, 7vw, 92px);
-      color: #4A2E15;
-      letter-spacing: .06em;
-      white-space: nowrap;
-      text-shadow:
-        0 0 3px #fff, 0 0 6px #fff, 0 0 10px #fff,
-        1px 1px 0 #fff, -1px 1px 0 #fff, 1px -1px 0 #fff, -1px -1px 0 #fff,
-        2px 2px 0 #fff, -2px 2px 0 #fff, 2px -2px 0 #fff, -2px -2px 0 #fff,
-        0 2px 12px rgba(255, 255, 255, .9);
-      pointer-events: none;
+      font-size: clamp(38px, 7vw, 86px);
+      color: #3a434d; letter-spacing: .06em; white-space: nowrap;
+      text-shadow: 0 0 2px #fff, 1px 1px 0 #fff, -1px 1px 0 #fff, 2px 3px 0 rgba(68,76,85,.14);
     }
-    .wave-title span {
-      display: inline-block;
-      animation: wave-bob 1.6s ease-in-out infinite;
-    }
-    @keyframes wave-bob {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-18px); }
+    .scan-hero-title span { display: inline-block; animation: hero-bob 1.8s ease-in-out infinite; }
+    @keyframes hero-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+    .scan-hero-sub {
+      margin-top: 18px;
+      font-family: "IBM Plex Mono", "Courier New", monospace;
+      font-size: clamp(11px, 1.6vw, 15px);
+      font-weight: 400; letter-spacing: .42em; text-indent: .42em; color: #728ca3;
     }
 
-    /* 完成态：上下两层分别向上/向下完全裂开，露出导航页 */
-    #splash-screen.finish .split.top {
-      animation: split-out-top .55s cubic-bezier(.7, 0, .3, 1) forwards;
+    /* —— 下半部：横向传送带安检机 —— */
+    .scan-track {
+      position: relative; z-index: 2;
+      width: min(880px, 92vw); height: 180px;
     }
-    #splash-screen.finish .split.bottom {
-      animation: split-out-bottom .55s cubic-bezier(.7, 0, .3, 1) forwards;
+    /* 传送带底座 */
+    .scan-belt-base {
+      position: absolute; left: 0; right: 0; bottom: 18px; height: 22px;
+      background: linear-gradient(180deg, #b8c4ce, #9aa9b6);
+      border: 1.5px solid #8795a3; border-radius: 4px;
+      box-shadow: inset 1px 1px 0 #fff;
+      overflow: hidden;
     }
-    #splash-screen.finish .zip-pull,
-    #splash-screen.finish .wave-title {
-      opacity: 0;
-      transition: opacity .3s ease;
+    /* 传送带滚动纹（无限横向流动，体现"流动性"） */
+    .scan-belt-base::before {
+      content: ""; position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(90deg, rgba(68,76,85,.22) 0 2px, transparent 2px 16px);
+      animation: belt-roll .6s linear infinite;
     }
-    @keyframes split-out-top    { to { transform: translateY(-100%); } }
-    @keyframes split-out-bottom { to { transform: translateY(100%); } }
+    @keyframes belt-roll { to { background-position: -16px 0; } }
+    /* 两端滚轮 */
+    .scan-roller { position: absolute; bottom: 12px; width: 34px; height: 34px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #d7dde3, #9aa9b6);
+      border: 2px solid #68798b; z-index: 3; }
+    .scan-roller.l { left: -6px; } .scan-roller.r { right: -6px; }
+    .scan-roller::after { content: ""; position: absolute; inset: 11px; border-radius: 50%; border: 2px dashed #68798b;
+      animation: roller-spin 1s linear infinite; }
+    @keyframes roller-spin { to { transform: rotate(360deg); } }
+
+    /* 中部安检舱（文案穿过它被扫描） */
+     .scan-cabin {
+      position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+      width: 260px; height: 130px;
+      background: rgba(125,144,162,.16);
+      border: 1.5px solid #8795a3; border-radius: 6px;
+      box-shadow: inset 0 0 18px rgba(114,140,163,.25);
+      z-index: 2;
+    }
+
+    .scan-cabin .cabin-top {
+      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+      font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .14em;
+      color: #5a6670; background: #e4e9ee; padding: 1px 8px; border: 1px solid #8795a3;
+    }
+    /* 扫描光：舱内上下往返的横向光带 */
+    .scan-cabin .cabin-light {
+      position: absolute; left: 4px; right: 4px; height: 3px; top: 8px;
+      background: linear-gradient(90deg, transparent, #728ca3, transparent);
+      box-shadow: 0 0 10px 2px rgba(114,140,163,.6);
+      animation: cabin-scan 1.1s ease-in-out infinite;
+    }
+    @keyframes cabin-scan { 0%,100% { top: 8px; } 50% { top: 114px; } }
+
+    /* 文案卡片：从左滑入 → 穿过安检舱 → 右侧滑出 */
+     .scan-pkg {
+      position: absolute; bottom: 34px; left: -300px;
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 20px; width: 260px;
+      background: #f6f9fb; border: 1.5px solid #8795a3; border-radius: 5px;
+      box-shadow: inset 1px 1px 0 #fff, 2px 3px 8px rgba(68,76,85,.2);
+      font-family: "Noto Serif SC", "Songti SC", serif; font-size: 15px; font-weight: 600; line-height: 1.6; color: #3a434d;
+      white-space: normal; z-index: 4;
+      animation: pkg-move 4.6s cubic-bezier(.4,.05,.5,.95) .4s forwards;
+    }
+    @keyframes pkg-move {
+      0%   { left: -300px; }
+      32%  { left: calc(50% - 130px); }   /* 滑到安检舱中心 */
+      52%  { left: calc(50% - 130px); }   /* 舱内停顿，被扫描 */
+      82%  { left: calc(100% - 300px); }  /* 整条滑出舱、停在右侧（不飞出屏幕）*/
+      100% { left: calc(100% - 300px); }  /* 停住，等待盖章 */
+      
+    }
+     .scan-pkg .pkg-stamp {
+      position: absolute; top: 50%; left: 50%;
+      font-family: "IBM Plex Mono", monospace; font-size: 30px; font-weight: 700; letter-spacing: .12em;
+      color: #6f9a63; border: 3px solid #6f9a63; border-radius: 6px; padding: 4px 16px;
+      background: rgba(246,249,251,.6);
+      opacity: 0; transform: translate(-50%,-50%) rotate(-10deg) scale(1.6); z-index: 5;
+    }
+    .scan-pkg.stamped .pkg-stamp { animation: pkg-stamp .4s cubic-bezier(.3,.7,.4,1) forwards; }
+    @keyframes pkg-stamp {
+      0%   { opacity: 0; transform: translate(-50%,-50%) rotate(-10deg) scale(1.6); }
+      60%  { opacity: 1; transform: translate(-50%,-50%) rotate(-10deg) scale(.92); }
+      100% { opacity: 1; transform: translate(-50%,-50%) rotate(-10deg) scale(1); }
+    }
+
+    /* 状态条 */
+    .scan-status {
+      position: absolute; z-index: 2; left: 50%; bottom: -34px; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 9px;
+      font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: .14em; color: #5a6670;
+      white-space: nowrap;
+    }
+    .scan-status .dot { width: 9px; height: 9px; border-radius: 50%; background: #e0b24a; animation: dot-blink .5s step-end infinite; }
+    .scan-status.pass .dot { background: #6f9a63; animation: none; }
+    @keyframes dot-blink { 50% { opacity: .3; } }
+
+    /* 跳过 */
+        .scan-skip {
+      position: absolute; top: 50%; right: 30px; transform: translateY(-50%); z-index: 5;
+      font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .12em;
+      color: #5a6670; background: #d7dde3; border: 1.5px solid #8795a3; padding: 6px 14px; cursor: pointer;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #9aa9b6;
+    }
+    .scan-skip:hover { background: #e4e9ee; }
+    #splash-screen.hidden .scan-skip,
+    #splash-screen.finish .scan-skip { display: none !important; }
+
+
+    #splash-screen.finish { animation: splash-out .5s ease forwards; }
+    @keyframes splash-out { to { opacity: 0; visibility: hidden; } }
+        /* —— 开场装饰：四角氛围 + 传送带排队文案 —— */
+    #splash-screen .sc-deco { position: absolute; z-index: 1; pointer-events: none; }
+    /* 左上：日期戳章 */
+        .sc-datestamp {
+      left: 1%; top: 1%;
+      width: 240px; height: auto;
+      transform: rotate(-9deg); opacity: .95;
+    }
+    /* 右上：像素小图标组 */
+    .sc-icons { right: 6%; top: 9%; display: flex; gap: 8px; opacity: .5; color: #7d90a2; transform: rotate(4deg); }
+    .sc-icons svg { width: 24px; height: 24px; }
+    .sc-corner-img { right: 6%; top: 8%; width: 152px; height: auto; transform: rotate(5deg); opacity: .95; }
+
+    /* 四角胶带 */
+    .sc-tape { width: 90px; height: 26px; background: rgba(159,178,194,.34);
+      border-left: 1px dashed rgba(255,255,255,.5); border-right: 1px dashed rgba(255,255,255,.5); }
+    .sc-tape.bl { left: 3%; bottom: 10%; transform: rotate(16deg); }
+    .sc-tape.br { right: 3%; bottom: 14%; transform: rotate(-20deg); }
+
+    /* 传送带左侧排队的待检文案（灰色小卡片，暗示批量） */
+    .scan-queue { position: absolute; bottom: 30px; left: -14px; display: flex; gap: 8px; z-index: 3; }
+    .scan-queue .q {
+      width: 34px; height: 44px; background: #dfe5ea; border: 1.5px solid #9aa9b6; border-radius: 4px;
+      box-shadow: inset 1px 1px 0 #fff;
+      background-image: repeating-linear-gradient(0deg, #b8c4ce 0 1px, transparent 1px 6px);
+      background-size: 100% 6px; background-position: 0 8px; background-repeat: no-repeat;
+    }
+    .scan-queue .q:nth-child(2) { opacity: .8; } .scan-queue .q:nth-child(3) { opacity: .6; }
+       .scan-fish {
+      position: absolute; z-index: 1; pointer-events: none;
+      left: 50%; bottom: -200px; transform: translateX(-50%) rotate(-4deg);
+      width: 180px; height: auto; opacity: .9;
+    }
     #splash-screen.hidden { display: none; }
+    #splash-screen.hidden .scan-skip,
+    #splash-screen.finish .scan-skip { display: none !important; }
 
     /* =====================================================================
-       导航页
+       导航页 —— 90s 复古档案桌面（纯 CSS/SVG，无图片）
        ===================================================================== */
-    #nav-page .nav-bg {
+    #nav-page {
+      background:
+        radial-gradient(ellipse 60% 45% at 50% 0%, rgba(114, 140, 163, 0.10), transparent 70%),
+        linear-gradient(180deg, #eaeef1 0%, #e4e8ea 55%, #dde2e4 100%);
+    }
+    /* 复古网点纹理底 + 极淡扫描线 */
+    #nav-page::before {
+      content: "";
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
       pointer-events: none;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"),
+        repeating-linear-gradient(0deg, rgba(68, 76, 85, 0.028) 0 1px, transparent 1px 3px);
+      z-index: 0;
     }
-    #nav-page .nav-veil {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(20,15,12,.35) 0%, rgba(20,15,12,.05) 55%, rgba(20,15,12,.55) 100%);
-      pointer-events: none;
-    }
+
+    /* —— 标题：复古窗口标题条 —— */
     #nav-page .nav-title {
       position: absolute;
-      top: 14%;
+      top: 11%;
       left: 50%;
       transform: translateX(-50%);
       text-align: center;
@@ -512,124 +533,252 @@
     }
     #nav-page .nav-title .title-cn {
       display: inline-block;
-      padding: 12px 34px;
-      color: #fff;
+      padding: 12px 36px;
+      color: #3a434d;
       font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
-      font-size: clamp(26px, 4.4vw, 52px);
+      font-size: clamp(26px, 4.4vw, 50px);
       font-weight: 700;
-      letter-spacing: .18em;
-      text-indent: .18em;
-      border: 2px solid rgba(255, 255, 255, .65);
-      border-radius: 6px;
-      background: rgba(20, 15, 12, .32);
-      backdrop-filter: blur(4px);
-      box-shadow: 0 0 0 6px rgba(255, 255, 255, .08), 0 10px 30px rgba(0, 0, 0, .35);
-      text-shadow: 0 2px 12px rgba(0, 0, 0, .55);
+      letter-spacing: .14em;
+      text-indent: .14em;
+      background: #f3f6f9;
+      border: 1.5px solid #9aa9b6;
+      border-radius: 4px;
+      box-shadow: inset 0 0 0 1px #fff, 3px 3px 0 rgba(68,76,85,.14), 6px 6px 0 rgba(68,76,85,.06);
     }
     #nav-page .nav-title .title-en {
       display: block;
       margin-top: 14px;
       font-family: "IBM Plex Mono", "Courier New", monospace;
-      font-size: clamp(11px, 1.6vw, 15px);
-      font-weight: 400;
-      letter-spacing: .42em;
-      text-indent: .42em;
-      color: rgba(255, 255, 255, .8);
-      text-shadow: 0 1px 6px rgba(0, 0, 0, .5);
+      font-size: clamp(10px, 1.6vw, 14px);
+      letter-spacing: .4em;
+      text-indent: .4em;
+      color: #728ca3;
     }
+
+    /* —— 入口窗口区 —— */
     #nav-page .nav-menu {
       position: absolute;
       left: 0;
       right: 0;
-      bottom: 12%;
+      top: 50%;
+      transform: translateY(-50%);
       display: flex;
-      align-items: center;
+      align-items: stretch;
       justify-content: center;
-      gap: 40px;
+      gap: 34px;
       padding: 0 24px;
       z-index: 2;
-      perspective: 1000px;
     }
-    #nav-page .nav-footer {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 14px;
-      text-align: center;
-      font-family: "IBM Plex Mono", "Courier New", monospace;
-      font-size: 10px;
-      letter-spacing: .18em;
-      color: rgba(255, 255, 255, .42);
-      z-index: 2;
-      pointer-events: none;
-    }
+
+    /* —— 入口：90s 复古程序窗口 —— */
     .nav-paper-btn {
       position: relative;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      min-width: 168px;
-      padding: 26px 28px;
-      background: rgba(255, 255, 255, .7);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      color: #4a4036;
+      align-items: stretch;
+      justify-content: flex-start;
+      min-width: 200px;
+      padding: 0;
+      background: #eef2f6;
+      color: #3a434d;
       font-family: "Noto Sans SC", "Inter", sans-serif;
-      font-size: 18px;
-      font-weight: 600;
-      letter-spacing: .12em;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, .65);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .7);
-      transform: rotate(var(--tilt, 0deg));
-      transform-style: preserve-3d;
-      transition: transform .5s cubic-bezier(.2, .7, .3, 1), box-shadow .5s ease, background .5s ease;
+      border: 1.5px solid #8795a3;
+      border-radius: 5px;
+      box-shadow:
+        inset 1px 1px 0 #ffffff,
+        inset -1px -1px 0 #b8c4ce,
+        3px 3px 0 rgba(68,76,85,.16),
+        7px 10px 18px rgba(68,76,85,.12);
+      transition: transform .18s ease, box-shadow .18s ease;
       cursor: pointer;
-      will-change: transform;
+      overflow: hidden;
     }
     .nav-paper-btn:hover {
-      transform: rotateY(15deg) translateY(-5px);
-      box-shadow: 0 24px 48px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .8);
-      background: rgba(255, 255, 255, .84);
+      transform: translateY(-5px);
+      box-shadow:
+        inset 1px 1px 0 #ffffff,
+        inset -1px -1px 0 #b8c4ce,
+        4px 8px 0 rgba(68,76,85,.16),
+        9px 16px 26px rgba(68,76,85,.16);
     }
-    .nav-paper-btn:active { transform: rotateY(8deg) translateY(-2px); }
-    /* 内部内容上浮一层，旋转时保持清晰可读 */
-    .nav-paper-btn .nav-icon,
-    .nav-paper-btn .nav-label {
-      transform: translateZ(20px);
-      backface-visibility: hidden;
+    .nav-paper-btn:active { transform: translateY(-1px); }
+
+    /* 窗口标题栏：深灰蓝条 + 左侧文件名 + 右侧 _ □ × 按钮 */
+    .nav-win-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 28px;
+      padding: 0 8px 0 10px;
+      background: linear-gradient(180deg, #7d90a2, #68798b);
+      border-bottom: 1.5px solid #8795a3;
     }
-    .nav-paper-btn .nav-icon {
+    .nav-win-title {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      color: #f2f6f9;
+      text-shadow: 0 1px 0 rgba(0,0,0,.25);
+    }
+    .nav-win-ctrls { display: flex; gap: 4px; }
+    .nav-win-ctrls span {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, .6);
-      color: #8a6f55;
-    }
-    .nav-paper-btn .nav-icon svg { width: 24px; height: 24px; }
-    .nav-paper-btn .nav-label {
-      display: inline-block;
+      width: 14px;
+      height: 13px;
+      background: #d7dde3;
+      border: 1px solid #55606b;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
       line-height: 1;
-    }
-    .nav-paper-btn::before {
-      content: "";
-      position: absolute;
-      top: -11px;
-      left: 50%;
-      transform: translateX(-50%) rotate(-2deg);
-      width: 66px;
-      height: 20px;
-      background: rgba(213, 196, 180, .62);
-      backdrop-filter: blur(2px);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
-      border-radius: 2px;
+      color: #3a434d;
+      box-shadow: inset 1px 1px 0 #fff;
     }
 
+    /* 窗口内容区 */
+    .nav-paper-btn .nav-icon {
+      margin: 22px auto 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 54px;
+      height: 54px;
+      border-radius: 6px;
+      background: #f6f9fb;
+      border: 1.5px solid #9aa9b6;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #c5ced6;
+      color: #5c7084;
+    }
+    .nav-paper-btn .nav-icon svg { width: 26px; height: 26px; }
+    .nav-paper-btn .nav-label {
+      display: block;
+      margin: 12px 0 2px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-indent: .14em;
+      color: #3a434d;
+    }
+    .nav-paper-btn .nav-desc {
+      display: block;
+      margin: 0 0 20px;
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: .04em;
+      color: #8795a3;
+    }
+
+    /* =====================================================================
+       装饰贴纸：叼印章的猫 / 别针便利贴 / 像素星星 / 胶带
+       ===================================================================== */
+    #nav-page .nav-deco { position: absolute; z-index: 1; pointer-events: none; }
+        /* 叼印章小猫 → 坐姿简笔猫 + 旁边红色 PASS 印章：右下角 */
+        .deco-cat { right: 2%; bottom: 8%; width: 280px; height: auto; transform: rotate(2deg); }
+    /* 便利贴：右上角、加大 */
+    .deco-memo {
+      right: 5%; top: 11%; left: auto;
+      width: 168px; padding: 20px 16px 18px;
+      background: #f6edcf;
+      border: 1px solid #e3d29a;
+      box-shadow: 4px 5px 12px rgba(68,76,85,.2);
+      transform: rotate(-4deg);
+      font-family: "Noto Serif SC", "Songti SC", serif;
+      color: #6b5b3a;
+    }
+    .deco-memo .memo-pin {
+      position: absolute; top: -10px; left: 50%;
+      width: 18px; height: 18px; margin-left: -9px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #d98b82, #b14f48);
+      box-shadow: 0 2px 3px rgba(0,0,0,.3);
+    }
+    .deco-memo .memo-label { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #8a7340; }
+    .deco-memo .memo-num { font-size: 26px; font-weight: 700; margin-top: 4px; font-family: "IBM Plex Mono", monospace; color: #6b5b3a; }
+    /* 半隐角落的大号复古文件夹（填空用，低调不抢眼） */
+    .deco-folder { left: -3%; bottom: -4%; width: 190px; color: #c4cdd5; opacity: .55; transform: rotate(-6deg); }
+
+    /* 像素星星 */
+    .deco-star { color: #9fb2c2; }
+    .deco-star.s1 { left: 16%; top: 20%; width: 20px; transform: rotate(-8deg); }
+    .deco-star.s2 { right: 18%; top: 24%; width: 14px; transform: rotate(12deg); }
+    .deco-star.s3 { right: 30%; bottom: 26%; width: 16px; }
+    .deco-star.s4 { left: 40%; top: 15%; width: 12px; transform: rotate(20deg); }
+    .deco-star.s5 { left: 10%; bottom: 30%; width: 18px; transform: rotate(-14deg); }
+
+    /* 胶带 */
+    .deco-tape {
+      width: 84px; height: 26px;
+      background: rgba(159,178,194,.38);
+      border-left: 1px dashed rgba(255,255,255,.5);
+      border-right: 1px dashed rgba(255,255,255,.5);
+    }
+    .deco-tape.t1 { left: 22%; top: 14%; transform: rotate(-18deg); }
+      .deco-dream {
+      left: -6%; top: 50%; transform: translateY(-50%) rotate(2deg);
+      width: auto; height: 78vh;
+    }
+
+
+    /* =====================================================================
+       复古任务栏 + 像素时钟（固定底部）
+       ===================================================================== */
+    #nav-page .nav-taskbar {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      background: linear-gradient(180deg, #c3ccd4, #aeb9c2);
+      border-top: 1.5px solid #ffffff;
+      box-shadow: inset 0 -1px 0 #8795a3;
+      z-index: 3;
+    }
+    .taskbar-start {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 26px;
+      padding: 0 12px 0 9px;
+      background: #d7dde3;
+      border: 1.5px solid #8795a3;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #9aa9b6;
+      font-family: "Noto Sans SC", sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      color: #3a434d;
+    }
+    .taskbar-start svg { width: 15px; height: 15px; color: #5c7084; }
+    .taskbar-mid {
+      flex: 1;
+      text-align: center;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: .14em;
+      color: #5a6670;
+    }
+    .taskbar-clock {
+      display: inline-flex;
+      align-items: center;
+      height: 26px;
+      padding: 0 12px;
+      background: #d7dde3;
+      border: 1.5px solid #8795a3;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #9aa9b6;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      color: #3a434d;
+    }
+
+     
+    
     /* =====================================================================
        模态框（通用）
        ===================================================================== */
@@ -813,7 +962,7 @@
       border-color: #C9D8DE !important;
     }
 
-    /* —— 主按钮（提交/重写等）统一圆角 10px + 灰青蓝底 —— */
+    /* —— 主按钮（提交/重写等）统一圆角 10px —— */
     .receipt-btn,
     #rewrite-btn,
     #start-audit {
@@ -823,17 +972,24 @@
     #main-app .glass-card {
       border-radius: 14px !important;
     }
+    /* 一键重写：灰青蓝实心 */
     #rewrite-btn { background-color: #A5C8D8 !important; color: #443831 !important; box-shadow: 0 8px 20px rgba(165, 200, 216, 0.35) !important; }
     #rewrite-btn:hover { background-color: #8FB8CB !important; }
 
-    /* —— 主按钮（启动审核）灰青蓝描边 + 米白底，保持轻量 —— */
+    /* 启动交叉审核：亮橘实心（焦点按钮） */
     #start-audit {
-      border-color: #A5C8D8 !important;
-      background-color: #FAF7F0 !important;
-      color: #443831 !important;
-      box-shadow: 0 1px 2px rgba(68, 56, 49, 0.06) !important;
+      border-color: #E8833A !important;
+      background-color: #E8833A !important;
+      color: #ffffff !important;
+      box-shadow: 0 8px 20px rgba(232, 131, 58, 0.30) !important;
     }
-    #start-audit:hover { background-color: #EAF2F6 !important; }
+    #start-audit:hover { background-color: #D9742D !important; }
+    #start-audit span { color: #ffffff !important; }
+    #start-audit svg { color: #ffffff !important; }
+
+    /* 风险扣分数字：亮橘 */
+    #risk-list .text-\[\#B16E64\] { color: #E8833A !important; }
+
 
     /* —— 次要按钮 → 棕色 —— */
     .nav-paper-btn {
@@ -857,6 +1013,117 @@
     .deco-bell { top: 18px; right: 26px; }
     .deco-dove { bottom: 20px; left: 26px; }
 
+    /* =====================================================================
+       工作台三栏：复古窗口标题栏（与开场/导航页同一世界观）
+       纯 CSS，不改 HTML 结构 / JS
+       ===================================================================== */
+    #main-app .glass-card {
+      position: relative;
+      overflow: hidden;
+      border: 1.5px solid #9aa9b6 !important;
+      box-shadow:
+        inset 1px 1px 0 #ffffff,
+        inset -1px -1px 0 #cdd6de,
+        4px 5px 0 rgba(68,76,85,.08),
+        0 14px 30px rgba(68,76,85,.08) !important;
+    }
+    /* 顶部复古标题条 */
+    #main-app .glass-card::before {
+      content: attr(data-win);
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      background: linear-gradient(180deg, #7d90a2, #68798b);
+      border-bottom: 1.5px solid #8795a3;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      color: #f2f6f9;
+      text-shadow: 0 1px 0 rgba(0,0,0,.25);
+      z-index: 3;
+    }
+    /* 右侧 _ □ × 三个复古方块 */
+    #main-app .glass-card::after {
+      content: "";
+      position: absolute;
+      top: 9px; right: 12px;
+      width: 12px; height: 11px;
+      background: #d7dde3;
+      box-shadow: -16px 0 0 #d7dde3, -32px 0 0 #d7dde3;
+      border: 1px solid #55606b;
+      z-index: 4;
+    }
+    /* 把卡片内容整体往下推 30px，给标题栏让位 */
+    #main-app .glass-card > * {
+      position: relative;
+      z-index: 1;
+    }
+    #main-app .glass-card {
+      padding-top: 30px !important;
+    }
+    /* =====================================================================
+       分数区：动态仪表盘圆环 + 发布线刻度
+       ===================================================================== */
+    .score-gauge {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      margin: 0 auto;
+      border-radius: 50%;
+      /* 圆环底色 + 进度（--deg 由 JS 设置；--ring 由 JS 设颜色）*/
+      background:
+        conic-gradient(var(--ring, #8E9B84) calc(var(--deg, 0) * 1deg), #e7e1da 0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 0 1px rgba(68,76,85,.08);
+    }
+    /* 中间挖空，形成环 */
+    .score-gauge::before {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: 50%;
+      background: var(--card, #FAF7F0);
+      box-shadow: inset 1px 1px 3px rgba(68,76,85,.06);
+    }
+    .score-gauge-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    /* 发布线刻度（横条上的标记） */
+    .score-scale {
+      position: relative;
+    }
+    .score-scale .pass-tick {
+      position: absolute;
+      top: -4px;
+      left: 85%;
+      width: 2px;
+      height: 14px;
+      background: #68798b;
+      transform: translateX(-50%);
+    }
+    .score-scale .pass-label {
+      position: absolute;
+      top: 14px;
+      left: 85%;
+      transform: translateX(-50%);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      color: #68798b;
+      white-space: nowrap;
+    }
+
     /* —— 标题使用温柔衬线体（正文保持清晰无衬线，确保长文案可读）—— */
     #main-app h1,
     #main-app h2 {
@@ -868,63 +1135,125 @@
 <body class="min-h-screen bg-[#F7F5F0] text-[#4A4036] antialiased">
 
   <!-- =====================================================================
-       模块一：开场拉链动画层
+       模块一：开场动画 —— 文案审核岛 · 横向传送带安检
        ===================================================================== -->
   <div id="splash-screen" aria-hidden="false">
-    <!-- 上下两层裂纹：各铺一张 bg.png（分别对齐顶部/底部），拖动时向上下裂开 -->
-    <div class="split top" id="split-top">
-      <div class="split-bg"></div>
-    </div>
-    <div class="split bottom" id="split-bottom">
-      <div class="split-bg"></div>
+        <!-- 四角氛围装饰 -->
+       <img src="planet.png" class="sc-deco sc-datestamp" alt="">
+     <img src="start.png" class="sc-deco sc-corner-img" alt="">
+    <div class="sc-deco sc-tape bl"></div>
+    <div class="sc-deco sc-tape br"></div>
+    <!-- 上半部：波动大标题 -->
+    <div class="scan-hero">
+      <div class="scan-hero-title">
+        <span>文</span><span>案</span><span>审</span><span>核</span><span>岛</span>
+      </div>
+      <div class="scan-hero-sub">CONTENT AUDIT ISLAND</div>
     </div>
 
-    <!-- 波纹文字：正中央「营销文案处理岛」7 个字 -->
-    <div class="wave-title" id="wave-title">
-      <span>营</span><span>销</span><span>文</span><span>案</span><span>处</span><span>理</span><span>岛</span>
-    </div>
+    <!-- 下半部：横向传送带安检 -->
+        <div class="scan-track">
+      <img src="fish.png" class="scan-fish" alt="">
+      <div class="scan-queue"><span class="q"></span><span class="q"></span><span class="q"></span></div>
+      <div class="scan-roller l"></div>
+      <div class="scan-roller r"></div>
+      <div class="scan-belt-base"></div>
+      <div class="scan-cabin">
+        <span class="cabin-top">SCAN</span>
+        <div class="cabin-light"></div>
+      </div>
+      <div class="scan-pkg" id="scan-pkg">
+        这款精华含玻尿酸，帮助肌肤补水保湿
+        <span class="pkg-stamp">PASS</span>
+      </div>
+          <div class="scan-status" id="scan-status">
+        <span class="dot"></span>
+        <span id="scan-status-text">SCANNING · 正在扫描…</span>
+      </div>
+    </div><!-- /.scan-track -->
 
-    <!-- 拉链头 / BEGIN 按钮（初始位于屏幕中左侧） -->
-    <div class="zip-pull" id="zip-pull">
-      <button type="button" class="begin-btn" id="begin-btn">
-        <span class="begin-sticker">BEGIN</span>
-      </button>
-      <span class="zip-hint">按住向右拉开</span>
-    </div>
-  </div>
+    <button type="button" class="scan-skip" id="scan-skip">跳过 ›</button>
+  </div><!-- /#splash-screen -->
 
-  <!-- =====================================================================
-       模块二：导航页
+
+   <!-- =====================================================================
+       模块二：导航页（90s 复古档案桌面）
        ===================================================================== -->
   <div id="nav-page" style="display:none;">
-    <img class="nav-bg" src="bg2.png" alt="">
-    <div class="nav-veil"></div>
     <div class="nav-title">
       <span class="title-cn">选择你的入口</span>
-      <span class="title-en">SELECT YOUR PORTAL</span>
+      <span class="title-en">SELECT A MODULE</span>
     </div>
+
+    <!-- 装饰：胶带 / 星星 / 便利贴 / 叼印章的猫 -->
+    <div class="nav-deco deco-tape t1"></div>
+    <svg class="nav-deco deco-star s1" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.6-.7L12 2z"/></svg>
+    <svg class="nav-deco deco-star s2" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.6-.7L12 2z"/></svg>
+    <svg class="nav-deco deco-star s3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.6-.7L12 2z"/></svg>
+    <svg class="nav-deco deco-star s4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.6-.7L12 2z"/></svg>
+    <svg class="nav-deco deco-star s5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 6.3L21 9l-5 4.2L17.5 20 12 16.4 6.5 20 8 13.2 3 9l6.6-.7L12 2z"/></svg>
+    <svg class="nav-deco deco-folder" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg>
+    <img src="dreamcatcher.png" class="nav-deco deco-dream" alt="">
+
+        <div class="nav-deco deco-memo">
+      <span class="memo-pin"></span>
+      <span class="memo-label">今日待审</span>
+      <div class="memo-num">42 篇</div>
+    </div>
+
+    <!-- 熊装饰 -->
+    <img src="bear.png" class="nav-deco deco-cat" alt="">
+
     <div class="nav-menu">
-      <button type="button" class="nav-paper-btn" style="--tilt:-2deg" data-nav="workflow">
+      <button type="button" class="nav-paper-btn" data-nav="workflow">
+        <div class="nav-win-bar">
+          <span class="nav-win-title">WORKFLOW.EXE</span>
+          <span class="nav-win-ctrls"><span>_</span><span>□</span><span>×</span></span>
+        </div>
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="4" cy="12" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6 12h4M14 12h4M12 6v4M12 14v4"/></svg>
         </span>
         <span class="nav-label">工作流</span>
+        <span class="nav-desc">Coze 审核工作流</span>
       </button>
-      <button type="button" class="nav-paper-btn" style="--tilt:0deg" data-nav="workbench">
+
+      <button type="button" class="nav-paper-btn" data-nav="workbench">
+        <div class="nav-win-bar">
+          <span class="nav-win-title">AUDIT.EXE</span>
+          <span class="nav-win-ctrls"><span>_</span><span>□</span><span>×</span></span>
+        </div>
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
         </span>
         <span class="nav-label">工作台</span>
+        <span class="nav-desc">双层交叉审核</span>
       </button>
-      <button type="button" class="nav-paper-btn" style="--tilt:2deg" data-nav="prd">
+
+      <button type="button" class="nav-paper-btn" data-nav="prd">
+        <div class="nav-win-bar">
+          <span class="nav-win-title">PRD.DOC</span>
+          <span class="nav-win-ctrls"><span>_</span><span>□</span><span>×</span></span>
+        </div>
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
         </span>
         <span class="nav-label">PRD</span>
+        <span class="nav-desc">产品需求文档</span>
       </button>
     </div>
-    <div class="nav-footer">AI Content Audit System v1.0 &copy; 2026</div>
+
+    <!-- 复古任务栏 -->
+    <div class="nav-taskbar">
+      <span class="taskbar-start">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4.5 6v5.2c0 4.6 3.2 8.2 7.5 9.8 4.3-1.6 7.5-5.2 7.5-9.8V6L12 3Z"/><path d="m8.8 12 2.1 2.1 4.5-4.6"/></svg>
+        审核系统
+      </span>
+      <span class="taskbar-mid">AI CONTENT AUDIT SYSTEM · V1.0 · 2026</span>
+      <span class="taskbar-clock" id="taskbar-clock">--:--:--</span>
+    </div>
   </div>
+
+
 
   <!-- =====================================================================
        模块三：三栏工作台
@@ -969,7 +1298,7 @@
     <main class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[25fr_45fr_30fr] xl:gap-6">
 
       <!-- ============ 第一栏：左侧控制台 ============ -->
-      <aside class="glass-card overflow-hidden rounded-[24px]" aria-labelledby="console-title">
+      <aside class="glass-card overflow-hidden rounded-[24px]" data-win="CONTROL.EXE" aria-labelledby="console-title">
         <div class="border-b border-[#EEE8E0] px-6 pb-6 pt-7 sm:px-7">
           <div class="mb-5 flex items-center justify-between">
             <span class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#AA9588]">Control Panel</span>
@@ -1149,7 +1478,7 @@
       </aside>
 
       <!-- ============ 第二栏：中间正文预览区 ============ -->
-      <section class="glass-card rounded-[24px] p-6 sm:p-8" aria-labelledby="preview-title">
+      <section class="glass-card rounded-[24px] p-6 sm:p-8" data-win="PREVIEW.EXE" aria-labelledby="preview-title">
         <div class="mb-7 flex items-end justify-between gap-4">
           <div>
             <div class="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#AA9588]">
@@ -1226,7 +1555,7 @@
       </section>
 
       <!-- ============ 第三栏：右侧结果面板 ============ -->
-      <aside class="glass-card rounded-[24px] p-6 sm:p-7" aria-labelledby="report-title">
+       <aside class="glass-card rounded-[24px] p-6 sm:p-7" data-win="REPORT.EXE" aria-labelledby="report-title">
         <div class="grid grid-cols-3 gap-1 rounded-full border border-[#ECE5DD] bg-[#F3F0EB] p-1" role="tablist" aria-label="审核结果视图">
           <button type="button" role="tab" data-tab="report" aria-selected="true" class="tab-btn cursor-pointer rounded-full bg-white px-2 py-2.5 text-xs font-semibold text-[#6E5448] shadow-[0_3px_10px_rgba(74,64,54,0.07)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40">审核报告</button>
           <button type="button" role="tab" data-tab="review" aria-selected="false" class="tab-btn cursor-pointer rounded-full px-2 py-2.5 text-xs font-medium text-[#9A8D82] transition-colors hover:text-[#6E5D52] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B89586]/40">人工终审</button>
@@ -1238,19 +1567,24 @@
           <section class="relative border-b border-[#EEE8E0] px-1 pb-7 pt-8 text-center" aria-label="综合评级">
             <div id="stamp" class="absolute right-0 top-7 rotate-12 select-none rounded-md border-2 px-3.5 py-1.5 font-mono text-lg font-semibold tracking-[0.16em] opacity-80"></div>
             <div id="risk-badge" class="inline-flex -translate-x-5 items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-medium xl:-translate-x-3"></div>
-            <h2 id="report-title" class="mt-6 text-xs font-medium tracking-[0.08em] text-[#91857A]">综合合规得分</h2>
-            <div class="mt-2 flex items-end justify-center text-[#4A4036]">
-              <strong id="score" class="font-mono text-[40px] font-semibold leading-none tracking-tight text-[#B4A99F]">待审核</strong>
-              <span id="score-unit" class="mb-1 ml-3 hidden font-mono text-lg font-medium text-[#9A8C81]">分</span>
+                      <h2 id="report-title" class="mt-6 text-xs font-medium tracking-[0.08em] text-[#91857A]">综合合规得分</h2>
+            <div class="score-gauge mt-4" id="score-gauge">
+              <div class="score-gauge-inner text-[#4A4036]">
+                <strong id="score" class="font-mono text-[44px] font-semibold tracking-tight text-[#B4A99F]">待审核</strong>
+                <span id="score-unit" class="mt-1 hidden font-mono text-xs font-medium text-[#9A8C81]">分</span>
+              </div>
             </div>
             <p id="score-note" class="mt-4 text-xs text-[#A07367]">尚未审核，点击「启动交叉审核」开始</p>
-            <div class="mx-auto mt-6 h-1.5 w-full max-w-[250px] overflow-hidden rounded-full bg-[#EEE8E1]">
-              <div id="score-bar" class="h-full rounded-full bg-[#B77B70]" style="width:0%"></div>
-            </div>
-            <div class="mx-auto mt-2 flex w-full max-w-[250px] justify-between text-[9px] tracking-wide text-[#AD9F93]">
-              <span>0</span>
-              <span>发布线 85</span>
-              <span>100</span>
+            <div class="score-scale mx-auto mt-6 w-full max-w-[250px]">
+              <div class="h-1.5 w-full overflow-hidden rounded-full bg-[#EEE8E1]">
+                <div id="score-bar" class="h-full rounded-full bg-[#B77B70]" style="width:0%"></div>
+              </div>
+              <span class="pass-tick"></span>
+              <span class="pass-label">发布线 85</span>
+              <div class="mt-5 flex w-full justify-between text-[9px] tracking-wide text-[#AD9F93]">
+                <span>0</span>
+                <span>100</span>
+              </div>
             </div>
             <div id="version-records" class="mt-5 hidden space-y-1.5 border-t border-[#F0EAE3] pt-4 text-left"></div>
           </section>
@@ -1794,6 +2128,7 @@
       // 审计结果：命中段数组，每段 {id, text, categories:[], main, active, ignored, points}
       var findings = [];
             var lastAIChanges = [];   // 最近一次 AI 改写的修改说明
+
       // 版本记录
       var versionRecords = [];
       // 当前选中的版本索引（-1 表示最新/当前编辑态）
@@ -1827,9 +2162,18 @@
           '判定原则：' +
           '1. 只有资质文档里明确有依据的功效/数据/奖项，才算合规；' +
           '2. 文案里出现资质文档没有依据的功效宣称（如美白、祛斑、抗炎、治疗、消除痘痘等）、无依据的数据（如90%好评、7天见效）、无依据的奖项或医学背书，都算虚假宣传；' +
-          '3. 主观感受描述（如"我觉得很舒服""上脸温和"）不算虚假宣传；' +
-          '4. 语义等价要识别：比如文案说"提亮肤色"而资质只说"保湿"，提亮无依据，算虚假宣传。' +
-          '输出要求：严格返回 JSON，格式为 {"claims":[{"claim":"文案里的原话片段","reason":"为什么算虚假宣传"}]}。' +
+          '3. 【重要】主观感受和温和性的肤感描述不算虚假宣传，不要返回，包括：' +
+          '"我觉得很舒服""上脸温和""不刺激""一点都不刺激""不黏腻""不紧绷""用着很安心""清爽"等，' +
+          '这类是使用者的主观体验表达，即使资质文档没有对应检测数据，也不算虚假宣传；' +
+          '4. 但如果是明确的客观功效/人群适配宣称且资质无依据，才算虚假宣传，如：' +
+          '"专为敏感肌研发""经临床验证适合敏感肌""修复敏感肌""抗敏"等（这些是功效/资质宣称，不是主观肤感）；' +
+          '5. 语义等价要识别：比如文案说"提亮肤色"而资质只说"保湿"，提亮无依据，算虚假宣传。' +
+ +
+           '【关键】claim 字段必须返回文案里完整的、有意义的违规宣称短语，而不是单个词。' +
+          '例如：应返回"专为敏感肌研发""经临床验证可修复敏感肌""适合所有过敏人群"这样的完整短语，' +
+          '而不是"临床""过敏"这样的孤立单词。每一处完整的功效/数据/奖项/背书/人群宣称，各返回一条。' +
+          'claim 必须是待审文案里能原样找到的连续文字片段。' +
+          '输出要求：严格返回 JSON，格式为 {"claims":[{"claim":"文案里的完整宣称短语","reason":"为什么算虚假宣传"}]}。' +
           '如果没有任何虚假宣传，返回 {"claims":[]}。不要输出 JSON 以外的任何文字。';
 
         var user = '【产品资质文档】\n' + credential + '\n\n【待审文案】\n' + text;
@@ -1868,6 +2212,35 @@
           rewritten: (result && result.rewritten) ? result.rewritten : text,
           changes: (result && result.changes) ? result.changes : []
         };
+      }
+
+            // 【AI 版】边界裁决：复核规则命中的风险，判断哪些是误伤（语境下其实合规）
+      // 入参 findingsList：规则命中的风险数组；返回被判为「误伤」的风险文本数组
+      async function arbitrateFindingsAI(text, findingsList) {
+        // 只复核容易误伤的类型（极限词、医疗词），引流和明显幻觉不复核
+        var toCheck = findingsList.filter(function (f) {
+          return f.main === 'limit' || f.main === 'medical';
+        });
+        if (toCheck.length === 0) return [];
+
+        var items = toCheck.map(function (f, i) {
+          return (i + 1) + '. 命中词「' + f.text + '」，规则判定类型：' + CATEGORIES[f.main].name;
+        }).join('\n');
+
+        var sys = '你是一名资深的广告合规复核专家。规则引擎用关键词匹配，会产生误伤。' +
+          '你的任务：结合【完整文案】的语境，复核每一个【规则命中项】，判断它是不是真的违规，还是被规则误伤了。' +
+          '误伤的典型情况：' +
+          '1. 「第一」用作量词（如"第一支""第一次用"），不是排名宣称，不违规；' +
+          '2. 「绝」用在口语夸赞（如"绝美""绝了"），不是《广告法》的绝对化用语，不违规；' +
+          '3. 医疗相关词用于客观描述现象或温和体验（如"痘痘肌也能用""不刺激"），而非宣称治疗功效，不违规。' +
+          '真违规的保持违规判定（如"全网第一""彻底治愈""消除痘痘"）。' +
+          '输出要求：严格返回 JSON，格式为 {"misjudged":["被误伤的命中词1","被误伤的命中词2"]}。' +
+          '只把你确认是误伤的命中词放进数组；没有误伤则返回 {"misjudged":[]}。不要输出 JSON 以外的任何文字。';
+
+        var user = '【完整文案】\n' + text + '\n\n【规则命中项】\n' + items;
+
+        var result = await callAIJson(sys, user);
+        return (result && result.misjudged) ? result.misjudged : [];
       }
 
       function checkHallucination(text) {
@@ -2039,6 +2412,8 @@
         scoreNoteEl.textContent = '尚未审核，点击「启动交叉审核」开始';
         scoreNoteEl.className = 'mt-4 text-xs text-[#A07367]';
         scoreBarEl.style.width = '0%';
+        var gaugeEl0 = document.getElementById('score-gauge');
+        if (gaugeEl0) { gaugeEl0.style.setProperty('--deg', 0); }
         stampEl.textContent = '';
         stampEl.className = 'absolute right-0 top-7 rotate-12 select-none rounded-md border-2 px-3.5 py-1.5 font-mono text-lg font-semibold tracking-[0.16em] opacity-80';
         riskBadgeEl.textContent = '';
@@ -2061,6 +2436,12 @@
         scoreUnitEl.classList.remove('hidden');
         var pct = Math.max(0, Math.min(100, score));
         scoreBarEl.style.width = pct + '%';
+        // 动态仪表盘圆环：角度 = 分数 * 3.6（满分 360°），颜色随是否达标
+        var gaugeEl = document.getElementById('score-gauge');
+        if (gaugeEl) {
+          gaugeEl.style.setProperty('--deg', (pct * 3.6));
+          gaugeEl.style.setProperty('--ring', score >= 85 ? '#8E9B84' : '#B77B70');
+        }
 
         if (score >= 85) {
           stampEl.textContent = 'PASS 通过';
@@ -2097,7 +2478,7 @@
         requestAnimationFrame(step);
       }
 
-      /* ===================== 扣分项列表 ===================== */
+        /* ===================== 扣分项列表 ===================== */
       function renderRiskList() {
         if (findings.length === 0) {
           riskListEl.innerHTML = '<li class="py-6 text-center text-xs text-[#8E9B84]">未检出风险，文案合规</li>';
@@ -2121,7 +2502,21 @@
             return '<span class="' + (main ? 'text-[#B16E64] font-medium' : 'text-[#A09286]') + '">' + CATEGORIES[c].name + '</span>';
           }).join(' · ');
 
-          var pointText = f.active ? '−' + f.points + ' 分' : '不计分';
+          // AI 复核合规标记：被边界裁决判为误伤的风险，显示绿色「AI 复核：合规」
+          if (f.arbitratedSafe) {
+            tagsHtml += ' · <span class="inline-flex items-center gap-1 text-[#7E9A73] font-medium">' +
+              '<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.2c0 4.6 3.2 8.2 7.5 9.8 4.3-1.6 7.5-5.2 7.5-9.8V6L12 3Z"/><path d="m8.8 12 2.1 2.1 4.5-4.6"/></svg>' +
+              'AI 复核：合规</span>';
+          }
+
+          // 计分文案：AI 复核合规的显示「AI 已豁免」，其余按原逻辑
+          var pointText;
+          if (f.arbitratedSafe) {
+            pointText = 'AI 已豁免';
+          } else {
+            pointText = f.active ? '−' + f.points + ' 分' : '不计分';
+          }
+          var pointColor = (f.active && !f.arbitratedSafe) ? 'text-[#B16E64]' : 'text-[#7E9A73]';
 
           li.innerHTML =
             '<div class="flex items-start justify-between gap-3">' +
@@ -2130,7 +2525,7 @@
                 '<div class="min-w-0">' +
                   '<div class="flex flex-wrap items-center gap-2">' +
                     '<h4 class="risk-title text-xs font-semibold text-[#5B4C42]">' + escapeHtml(f.text) + '</h4>' +
-                    '<span class="text-[10px] font-medium ' + (f.active ? 'text-[#B16E64]' : 'text-[#A09286]') + '">' + pointText + '</span>' +
+                    '<span class="text-[10px] font-medium ' + pointColor + '">' + pointText + '</span>' +
                   '</div>' +
                   '<p class="risk-desc mt-2 text-[11px] leading-5 text-[#97897E]">' + tagsHtml + '</p>' +
                 '</div>' +
@@ -2154,6 +2549,7 @@
           });
         });
       }
+
 
       function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -2509,10 +2905,13 @@
         // 第二层：AI 语义审核（事实幻觉），补充规则漏掉的虚假宣传
         if (enabledRules.hallucination) {
           s.textContent = '第二层：AI 语义深度审核中…';
-          try {
+                   try {
             var credential = CREDENTIAL;
             var aiClaims = await checkHallucinationAI(currentText, credential);
             mergeAIClaims(aiClaims);
+            // AI 边界裁决：复核规则命中，标记误伤项（不扣分）
+            var misjudged = await arbitrateFindingsAI(currentText, findings);
+            applyArbitration(misjudged);
           } catch (err) {
             // AI 调用失败不影响规则层结果，静默降级
             console.log('AI 审核降级（使用规则层结果）：', err);
@@ -2538,11 +2937,41 @@
       }
 
       // 把 AI 发现的虚假宣传合并进 findings（去重：规则层已命中的位置不重复加）
-      function mergeAIClaims(aiClaims) {
+      // 把 AI 返回的可能过短的 claim，扩展成它在原文中所处的完整短句（标点之间的片段）
+      // 解决小模型只返回单词（如"临床""过敏"）而非完整宣称短语的问题
+      function expandClaimToPhrase(text, claim) {
+        claim = (claim || '').trim();
+        if (!claim) return claim;
+        var pos = text.indexOf(claim);
+        if (pos === -1) return claim;
+        // 以中英文标点作为短句边界
+        var seps = '，。！？；,.!?;、\n';
+        // 向左找到短句起点
+        var start = pos;
+        while (start > 0 && seps.indexOf(text.charAt(start - 1)) === -1) {
+          start--;
+        }
+        // 向右找到短句终点
+        var end = pos + claim.length;
+        while (end < text.length && seps.indexOf(text.charAt(end)) === -1) {
+          end++;
+        }
+        var phrase = text.slice(start, end).trim();
+        // 若扩展后的短句过长（超过原 claim 很多且超过25字），保守起见仍用原 claim，避免整句泛标
+        if (phrase.length > 25 && phrase.length > claim.length * 4) {
+          return claim;
+        }
+        return phrase || claim;
+      }
+
+
+            function mergeAIClaims(aiClaims) {
         if (!aiClaims || !aiClaims.length) return;
         aiClaims.forEach(function (c) {
           var claimText = (c.claim || '').trim();
           if (!claimText) return;
+          // 把过短的单词 claim 扩展成完整短句，提升标注精准度
+          claimText = expandClaimToPhrase(currentText, claimText);
           var pos = currentText.indexOf(claimText);
           if (pos === -1) return; // AI 返回的片段在原文找不到，跳过
           // 去重：若该位置已被规则层命中，只补充"幻觉"标签，不新增
@@ -2559,6 +2988,7 @@
               break;
             }
           }
+
           if (overlapped) return;
           // 新增一条 AI 发现的 finding
           var nf = {
@@ -2596,6 +3026,21 @@
         renderStats();
         renderRiskList();
         renderScore();
+      }
+
+            // 应用 AI 裁决：把被判为误伤的风险标记为「AI 复核合规」，不参与扣分
+      function applyArbitration(misjudgedWords) {
+        if (!misjudgedWords || !misjudgedWords.length) return;
+        findings.forEach(function (f) {
+          if (misjudgedWords.indexOf(f.text) !== -1) {
+            f.arbitratedSafe = true;   // 标记：AI 复核认为安全
+            f.active = false;          // 不参与扣分
+            f.points = 0;
+          }
+        });
+        // 重新编号（内容没变，保持顺序即可）
+        findings.sort(function (a, b) { return a.pos - b.pos; });
+        findings.forEach(function (f, idx) { f.seq = idx + 1; });
       }
 
       /* ===================== 人工终审 ===================== */
@@ -3202,130 +3647,48 @@
       var splashEl = document.getElementById('splash-screen');
       var navEl = document.getElementById('nav-page');
       var mainEl = document.getElementById('main-app');
-      var splitTop = document.getElementById('split-top');
-      var splitBottom = document.getElementById('split-bottom');
-      var waveTitle = document.getElementById('wave-title');
-      var zipPull = document.getElementById('zip-pull');
-      var beginBtn = document.getElementById('begin-btn');
+         /* ---------- 开场动画：文案审核岛 · 传送带安检 → 进入导航页 ---------- */
+      var scanPkg = document.getElementById('scan-pkg');
+      var scanStatus = document.getElementById('scan-status');
+      var scanStatusText = document.getElementById('scan-status-text');
+      var scanSkip = document.getElementById('scan-skip');
+      var splashDone = false;
 
-      /* ---------- 波纹文字：7 个字 animation-delay 相邻递增 0.1s ---------- */
-      if (waveTitle) {
-        var spans = waveTitle.querySelectorAll('span');
-        for (var i = 0; i < spans.length; i++) {
-          spans[i].style.animationDelay = (i * 0.1) + 's';
+      // 标题逐字波动：相邻字错开 0.12s
+      (function () {
+        var hero = document.querySelectorAll('.scan-hero-title span');
+        for (var i = 0; i < hero.length; i++) {
+          hero[i].style.animationDelay = (i * 0.12) + 's';
         }
-      }
+      })();
 
-      /* ---------- 上下裂纹拖拽 ---------- */
-      var START_LEFT = 50;   // 按钮初始 left 百分比（屏幕中央棕色长条）
-      var THRESHOLD = 0.7;   // 裂开进度超过 70% 即完成
-      var dragging = false;
-      var startX = 0;        // 按下时的指针 X
-      var startLeftPct = 0;  // 按下时按钮的 left 百分比
-      var winW = 0;
-      var currentP = 0;      // 当前按钮 left 百分比 0~100
-      var currentCrack = 0;  // 当前裂开进度 0~1
-
-      function recalcWidth() {
-        winW = window.innerWidth || document.documentElement.clientWidth;
-      }
-      recalcWidth();
-
-      // 根据按钮 left 百分比 p（0~100）更新裂开进度与上下层位移
-      function applySplit(p) {
-        p = Math.max(0, Math.min(100, p));
-        currentP = p;
-        // 裂开进度：按钮从初始 START_LEFT 拖到 100% 时，crack 从 0 到 1
-        var crack = Math.max(0, Math.min(1, (p - START_LEFT) / (100 - START_LEFT)));
-        currentCrack = crack;
-        // 每层移动自身高度的百分比：上半层向上、下半层向下，像撕纸一样从中间裂开
-        var dy = crack * 100;
-        splitTop.style.transform = 'translateY(-' + dy + '%)';
-        splitBottom.style.transform = 'translateY(' + dy + '%)';
-        // 拉链头水平跟随
-        zipPull.style.left = p + '%';
-        // 裂得越开，波纹文字越淡
-        waveTitle.style.opacity = String(Math.max(0, 1 - crack * 1.5));
-      }
-
-      // 完成：上下两层快速裂开消失 → 显示导航页 → 隐藏开场层
-      function finishSplit() {
-        if (splashEl.classList.contains('finish')) return;
+      function enterNav() {
+        if (splashDone) return;
+        splashDone = true;
         splashEl.classList.add('finish');
         setTimeout(function () {
           splashEl.classList.add('hidden');
           navEl.style.display = 'block';
-        }, 580);
+        }, 480);
       }
 
-      function onDragStart(clientX) {
-        dragging = true;
-        startX = clientX;
-        startLeftPct = currentP;
-        zipPull.classList.add('dragging');
+      // 时间线（总约 6s）：
+      // 文案卡片 0.4s 入场滑行 → 约 2.6s 到舱内被扫 → 盖 PASS 章 + 状态转绿 → 卡片滑出 → 自动进入
+      var tStamp = setTimeout(function () {
+        if (scanPkg) scanPkg.classList.add('stamped');          // 盖 PASS 章
+        if (scanStatus) scanStatus.classList.add('pass');       // 状态灯转绿
+        if (scanStatusText) scanStatusText.textContent = 'PASS · 合规通过';
+      }, 4600);
+
+      var tEnter = setTimeout(enterNav, 6000);                   // 自动进入
+
+      if (scanSkip) {
+        scanSkip.addEventListener('click', function () {
+          clearTimeout(tStamp);
+          clearTimeout(tEnter);
+          enterNav();
+        });
       }
-
-      function onDragMove(clientX) {
-        if (!dragging) return;
-        // 拖动距离（像素）→ 转换为百分比偏移
-        var delta = clientX - startX;
-        var deltaPct = (delta / winW) * 100;
-        var p = startLeftPct + deltaPct;
-        applySplit(p);
-      }
-
-      function onDragEnd() {
-        if (!dragging) return;
-        dragging = false;
-        zipPull.classList.remove('dragging');
-        if (currentCrack >= THRESHOLD) {
-          applySplit(100);
-          finishSplit();
-        } else {
-          // 未达阈值：回弹到初始位置（左侧棕色长条）
-          applySplit(START_LEFT);
-        }
-      }
-
-      /* ---------- 事件监听：全部绑定在 document 级别 ---------- */
-      // 鼠标
-      document.addEventListener('mousedown', function (e) {
-        if (e.target === beginBtn || beginBtn.contains(e.target)) {
-          e.preventDefault();
-          onDragStart(e.clientX);
-        }
-      });
-      document.addEventListener('mousemove', function (e) {
-        if (dragging) {
-          e.preventDefault();
-          onDragMove(e.clientX);
-        }
-      });
-      document.addEventListener('mouseup', function () {
-        onDragEnd();
-      });
-
-      // 触摸
-      document.addEventListener('touchstart', function (e) {
-        if (e.target === beginBtn || beginBtn.contains(e.target)) {
-          var t = e.touches[0];
-          onDragStart(t.clientX);
-        }
-      }, { passive: false });
-      document.addEventListener('touchmove', function (e) {
-        if (!dragging) return;
-        var t = e.touches[0];
-        onDragMove(t.clientX);
-        e.preventDefault();
-      }, { passive: false });
-      document.addEventListener('touchend', function () {
-        onDragEnd();
-      });
-
-      window.addEventListener('resize', function () {
-        recalcWidth();
-        if (!dragging) applySplit(START_LEFT);
-      });
 
       /* ---------- 导航页交互 ---------- */
       function showMain() {
@@ -3420,9 +3783,19 @@
 
       /* ---------- 初始状态 ---------- */
       // 开场层默认显示；导航页与工作台默认隐藏
-      applySplit(START_LEFT);
       navEl.style.display = 'none';
       mainEl.style.display = 'none';
+            /* ---------- 任务栏像素时钟 ---------- */
+      var clockEl = document.getElementById('taskbar-clock');
+      if (clockEl) {
+        var tick = function () {
+          var d = new Date();
+          var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+          clockEl.textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+        };
+        tick();
+        setInterval(tick, 1000);
+      }
     })();
   </script>
 
